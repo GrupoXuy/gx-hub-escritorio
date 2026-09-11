@@ -56,6 +56,7 @@ export function Avatar({
     >
       <span className="avatar-plate" />
       {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element -- URL externa arbitrária do perfil, sem dominio conhecido para o next/image
         <img src={photo} alt={initials(member.name || "")} loading="lazy" />
       ) : (
         <PixelAvatar

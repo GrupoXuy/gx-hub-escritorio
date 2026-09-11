@@ -101,7 +101,7 @@ export function AvatarStudio({
             <StudioRow label="Cor do cabelo">
               <div className="swatch-row">
                 {HAIR_COLORS.map(item => (
-                  <button key={item.value} type="button" className={look.hairColor === item.value ? "on" : ""} style={{ background: item.value }} aria-label={item.name} title={item.name} onClick={() => pick({ hairColor: item.value })}>
+                  <button key={item.value} type="button" className={look.hairColor === item.value ? "on" : ""} style={{ background: item.value }} aria-label={item.name} title={item.name} aria-pressed={look.hairColor === item.value} onClick={() => pick({ hairColor: item.value })}>
                     {look.hairColor === item.value && <Check size={13} />}
                   </button>
                 ))}
@@ -125,7 +125,7 @@ export function AvatarStudio({
             <StudioRow label="Cor do traje">
               <div className="swatch-row">
                 {AVATAR_COLORS.map(item => (
-                  <button key={item.value} type="button" className={color === item.value ? "on" : ""} style={{ background: item.value }} aria-label={item.name} title={item.name} onClick={() => onColor(item.value)}>
+                  <button key={item.value} type="button" className={color === item.value ? "on" : ""} style={{ background: item.value }} aria-label={item.name} title={item.name} aria-pressed={color === item.value} onClick={() => onColor(item.value)}>
                     {color === item.value && <Check size={13} />}
                   </button>
                 ))}
@@ -147,7 +147,7 @@ export function AvatarStudio({
               ))}
             </StudioRow>
             <StudioRow label="Presença">
-              <button type="button" className={`aura-toggle ${look.aura ? "on" : ""}`} onClick={() => pick({ aura: !look.aura })}>
+              <button type="button" className={`aura-toggle ${look.aura ? "on" : ""}`} aria-pressed={look.aura} onClick={() => pick({ aura: !look.aura })}>
                 <span className="aura-dot" />
                 <span><strong>Aura dourada</strong><small>Realça você no mapa e ilumina o avatar em qualquer tela.</small></span>
               </button>
@@ -249,7 +249,7 @@ export function AvatarQuickPick({
         <div className="quickpick-foot">
           <div className="swatch-row">
             {AVATAR_COLORS.map(item => (
-              <button key={item.value} type="button" className={color === item.value ? "on" : ""} style={{ background: item.value }} aria-label={item.name} title={item.name} onClick={() => onColor(item.value)}>
+              <button key={item.value} type="button" className={color === item.value ? "on" : ""} style={{ background: item.value }} aria-label={item.name} title={item.name} aria-pressed={color === item.value} onClick={() => onColor(item.value)}>
                 {color === item.value && <Check size={12} />}
               </button>
             ))}

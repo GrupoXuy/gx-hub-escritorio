@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "avatar:sheet": "tsx scripts/avatar-contact-sheet.ts .avatar-preview/sheet.png",
     "avatar:svg": "tsx scripts/avatar-svg.tsx .avatar-preview/react.svg",
-    "avatar:preview": "tsx scripts/avatar-preview-page.tsx"
+    "avatar:preview": "tsx scripts/avatar-preview-page.tsx",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@playwright/test": "^1.63.0",
