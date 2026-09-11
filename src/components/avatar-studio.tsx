@@ -52,7 +52,7 @@ export function AvatarStudio({
           size={148}
           own
           preview={false}
-          action={preview === "idle" ? (view === "back" ? "idle" : "idle") : preview}
+          action={preview}
           direction={view === "back" ? "ur" : "dr"}
         />
         <div className="stage-tools" role="group" aria-label="Prévia do avatar">
