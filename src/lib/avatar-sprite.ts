@@ -28,6 +28,8 @@ export type SpriteInput = {
   /** Liga microdetalhes (nariz, costuras, brilhos). Desligado em tamanhos pequenos. */
   fine: boolean;
   suit: string;
+  /** Desloca as pupilas em direção aonde a pessoa olha (-0.5 / 0 / 0.5 em unidades de sprite). */
+  pupilShift?: number;
 };
 
 export type Sprite = { layers: Record<LayerName, Pixel[]>; shadow: { cx: number; cy: number; rx: number; ry: number } };
@@ -65,6 +67,8 @@ type Ctx = {
   trouser: string; trouserDark: string; trouserLight: string;
   shoe: string; shoeDark: string;
   tieColor: string; casual: boolean;
+  /** Para onde as pupilas apontam, em unidades de sprite (-0.7..0.7). */
+  pupilShift: number;
   /** Deslocamento vertical ao sentar: a cabeça afunda mais que o busto. */
   bodyY: number; headY: number;
 };
@@ -98,6 +102,7 @@ function createContext(input: SpriteInput): Ctx {
     shoe: casual ? "#eceadf" : "#15181d",
     shoeDark: casual ? "#b4b1a6" : "#0a0c10",
     tieColor: input.look.outfit === "shirt" ? suit : "#1b1e24",
+    pupilShift: Number.isFinite(input.pupilShift ?? 0) ? Math.max(-0.7, Math.min(0.7, input.pupilShift ?? 0)) : 0,
     casual,
     bodyY: input.sitting ? 1 : 0,
     headY: input.sitting ? 2 : 0,
@@ -338,10 +343,11 @@ function drawFace(sheet: Sheet, c: Ctx) {
   } else {
     sheet.push("eyes", eyeL, eyeY, eyeW, 2.4, "#f8f5ef");
     sheet.push("eyes", eyeR, eyeY, eyeW, 2.4, "#f8f5ef");
-    sheet.push("eyes", eyeL + 0.7, eyeY + 0.5, 1.8, 1.8, "#241f1d");
-    sheet.push("eyes", eyeR + 0.7, eyeY + 0.5, 1.8, 1.8, "#241f1d");
-    sheet.push("eyes", eyeL + 0.7, eyeY + 0.3, 0.8, 0.8, "#ffffff", 0.9);
-    sheet.push("eyes", eyeR + 0.7, eyeY + 0.3, 0.8, 0.8, "#ffffff", 0.9);
+    const px = c.pupilShift;
+    sheet.push("eyes", eyeL + 0.7 + px, eyeY + 0.5, 1.8, 1.8, "#241f1d");
+    sheet.push("eyes", eyeR + 0.7 + px, eyeY + 0.5, 1.8, 1.8, "#241f1d");
+    sheet.push("eyes", eyeL + 0.7 + px, eyeY + 0.3, 0.8, 0.8, "#ffffff", 0.9);
+    sheet.push("eyes", eyeR + 0.7 + px, eyeY + 0.3, 0.8, 0.8, "#ffffff", 0.9);
     sheet.push("eyes", eyeL - 0.2, eyeY - 0.6, eyeW + 0.4, 0.7, c.skin.dark, 0.45);
     sheet.push("eyes", eyeR - 0.2, eyeY - 0.6, eyeW + 0.4, 0.7, c.skin.dark, 0.45);
   }

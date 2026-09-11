@@ -125,9 +125,12 @@ export function PixelAvatar({
   const waving = !!member.handRaised || currentAction === "wave";
   const speaking = !!member.micEnabled;
   const fine = size >= 40;
+  // os olhos apontam para onde a pessoa está virada (em coordenadas locais: o espelhamento inverte o sinal)
+  const facing = currentDir === "dr" || currentDir === "ur" ? 1 : currentDir === "dl" || currentDir === "ul" ? -1 : 0;
+  const pupilShift = isFlipped ? -facing * 0.5 : facing * 0.5;
   const sprite = useMemo(
-    () => buildSprite({ look, view: isBack ? "back" : "front", sitting, walking, waving, admin: member.isAdmin === true, fine, suit: member.color || GOLD }),
-    [look, isBack, sitting, walking, waving, member.isAdmin, fine, member.color]
+    () => buildSprite({ look, view: isBack ? "back" : "front", sitting, walking, waving, admin: member.isAdmin === true, fine, suit: member.color || GOLD, pupilShift }),
+    [look, isBack, sitting, walking, waving, member.isAdmin, fine, member.color, pupilShift]
   );
   const inkOn = !preview && size >= 26;
   const halo = own || look.aura;

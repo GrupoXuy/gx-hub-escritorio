@@ -32,7 +32,7 @@ type Cell = {
   look: AvatarLook; suit?: string; view?: "front" | "back"; sitting?: boolean;
   walking?: boolean; waving?: boolean; fine?: boolean; own?: boolean; admin?: boolean;
   /** Tamanho real de exibição em px (simula avatares pequenos). */
-  size?: number; bg?: string; label?: string;
+  size?: number; bg?: string; label?: string; pupilShift?: number;
 };
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -126,6 +126,7 @@ function renderCell(cell: Cell) {
     admin: cell.admin ?? false,
     fine: cell.fine ?? true,
     suit: cell.suit ?? "#c7a66e",
+    pupilShift: cell.pupilShift ?? 0,
   });
 
   const flat: { x: number; y: number; w: number; h: number; rgb: [number, number, number]; a: number; r: number }[] = [];
@@ -257,6 +258,8 @@ const rows: Cell[][] = [
     { look: { ...DEFAULT_LOOK, hair: "long" as const, outfit: "shirt" as const, expression: "joy" as const }, label: "longo+camisa" },
   ],
   [
+    { look: DEFAULT_LOOK, pupilShift: -0.5, label: "olha p/ esquerda" },
+    { look: DEFAULT_LOOK, pupilShift: 0.5, label: "olha p/ direita" },
     { look: DEFAULT_LOOK, label: "parado" },
     { look: DEFAULT_LOOK, sitting: true, label: "sentado" },
     { look: DEFAULT_LOOK, view: "back", sitting: true, label: "sentado costas" },
@@ -271,6 +274,7 @@ const rows: Cell[][] = [
     { look: { ...DEFAULT_LOOK, outfit: "shirt" }, suit: "#c4c9ca", label: "prata camisa" },
     { look: { ...DEFAULT_LOOK, outfit: "tee" }, suit: "#c58b77", label: "terracota tee" },
     { look: { ...DEFAULT_LOOK, hair: "side", accessory: "badge" }, suit: "#c7a66e", label: "crachá" },
+    { look: DEFAULT_LOOK, size: 25, pupilShift: 0.5, fine: false, label: "olhar 25px" },
   ],
   Array.from({ length: COLS }, (_, i) => ({ look: lookFromId(`membro-${i + 1}`), label: `hash ${i + 1}` })),
 ];
