@@ -15,7 +15,7 @@ export type FurnitureSpot = {
 };
 
 export type Member = {
-  id: string; name: string; role: string; company: string; avatar: string; color: string;
+  id: string; name: string; role: string; company: string; avatar: string; color: string; avatarLook?: string | null;
   roomId: string; status: string; x: number; y: number; isDemo: boolean; isAdmin: boolean;
   canAccessGroupSystem: boolean; gender?: string | null; email?: string | null; accessToken?: string | null; handRaised: boolean;
   action?: AvatarAction; direction?: Direction; sittingOn?: string | null;
@@ -26,7 +26,7 @@ export const GENDER_OPTIONS = [
   { value: "female", label: "Feminino" },
 ];
 export type RosterEntry = {
-  id: string; name: string; role: string; company: string; avatar: string; color: string;
+  id: string; name: string; role: string; company: string; avatar: string; color: string; avatarLook?: string | null;
   isAdmin: boolean; online: boolean;
 };
 export type Room = { id: string; name: string; description: string; kind: string; capacity: number; color: string };
@@ -55,6 +55,10 @@ export const AVATAR_COLORS = [
   { value: "#b29bc3", name: "Lilás" },
   { value: "#c58b77", name: "Terracota" },
   { value: "#c4c9ca", name: "Prata" },
+  { value: "#7f8ea3", name: "Aço escuro" },
+  { value: "#a97f86", name: "Rosé queimado" },
+  { value: "#8a7f52", name: "Oliva" },
+  { value: "#5f7f74", name: "Verde floresta" },
 ];
 export const ROOM_POSITIONS: Record<string, { x: number; y: number }> = {
   recepcao: { x: 61, y: 73 }, coworking: { x: 61, y: 47 }, estrategia: { x: 42, y: 48 }, lounge: { x: 36, y: 68 }, diretoria: { x: 48, y: 39 },

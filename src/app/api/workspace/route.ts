@@ -3,6 +3,7 @@ import { users, rooms, messages, meetings } from "@/db/schema";
 import { and, desc, eq, gt, or, asc } from "drizzle-orm";
 import { getMember, seedWorkspace, fail, publicMember } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
+import { serializeLook } from "@/lib/avatar";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -49,6 +50,9 @@ export async function PATCH(request: Request) {
       if (taken && taken.id !== me.id) return Response.json({ error: "Este nome já está em uso pela equipe. Escolha outro." }, { status: 409 });
     }
     if (body.avatar === "") patch.avatar = "";
+    if (body.look !== undefined || body.avatarLook !== undefined) {
+      patch.avatarLook = serializeLook(body.look ?? body.avatarLook);
+    }
     if (body.color !== undefined) {
       if (!/^#[0-9a-f]{6}$/i.test(body.color)) return Response.json({ error: "Escolha uma cor válida." }, { status: 400 });
       patch.color = body.color;

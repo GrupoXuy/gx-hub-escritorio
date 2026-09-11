@@ -3,6 +3,7 @@ import { clientInvites, leads, meetings, rooms, users } from "@/db/schema";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { fail, publicMember, randomToken, seedWorkspace, setGuestSession, validEmail, validProfileText } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
+import { serializeLook, defaultLookFor, lookFromId } from "@/lib/avatar";
 
 export async function POST(request: Request) {
   try {
@@ -28,7 +29,8 @@ export async function POST(request: Request) {
       const [lead] = await tx.insert(leads).values({ name, gender, whatsapp, email, clientInviteId: row.invite.id, meetingId: row.meeting.id }).returning();
       const [guest] = await tx.insert(users).values({
         id: crypto.randomUUID(), name, role: "Cliente convidado", company: "Visitante",
-        avatar: "", color: gender === "female" ? "#b29bc3" : "#7295a1", roomId: row.meeting.roomId,
+        avatar: "", color: gender === "female" ? "#b29bc3" : "#7295a1",
+        avatarLook: serializeLook({ ...defaultLookFor(gender), ...lookFromId(row.meeting.roomId + name) }), roomId: row.meeting.roomId,
         status: "available", x: 61, y: 47, isDemo: false, isAdmin: false,
         canAccessGroupSystem: false, isGuest: true, guestInviteId: row.invite.id,
         guestExpiresAt: row.invite.expiresAt, gender, email, accessToken: null, lastSeen: new Date(),

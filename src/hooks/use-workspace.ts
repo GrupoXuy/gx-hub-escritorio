@@ -63,7 +63,7 @@ export function useWorkspace() {
   const saveCredentials = useCallback(async (email: string, password: string) => {
     await api("/api/auth/credentials", { method: "PATCH", body: JSON.stringify({ email, password }) });
   }, []);
-  const register = useCallback(async (payload: { name: string; role: string; company: string; color: string; gender: string; inviteToken: string; email: string; password: string }) => {
+  const register = useCallback(async (payload: { name: string; role: string; company: string; color: string; gender: string; look?: string; inviteToken: string; email: string; password: string }) => {
     await api("/api/auth/register", { method: "POST", body: JSON.stringify(payload) });
     setAuthNeeded(false);
     await refresh();
