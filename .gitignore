@@ -18,6 +18,10 @@ npm-debug.log*
 # Testes
 artifacts
 playwright-report
+
+# Prévia do avatar gerada por scripts/avatar-preview-page.tsx
+.avatar-preview
+public/preview-estudio.html
 test-results
 
 # Sistema

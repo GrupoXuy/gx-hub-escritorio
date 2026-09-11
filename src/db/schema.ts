@@ -7,6 +7,7 @@ export const users = pgTable("gx_users", {
   company: text("company").notNull().default("Grupo X"),
   avatar: text("avatar").notNull().default(""),
   color: text("color").notNull().default("#c7a66e"),
+  avatarLook: text("avatar_look").notNull().default(""),
   roomId: text("room_id").notNull().default("recepcao"),
   status: text("status").notNull().default("available"),
   x: real("x").notNull().default(61),

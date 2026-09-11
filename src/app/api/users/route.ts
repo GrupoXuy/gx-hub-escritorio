@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { users, messages, meetings, invitations, signals } from "@/db/schema";
 import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { fail, getMember, hashPassword, isHenriqueAdmin, validColor, validEmail, validPassword, validProfileText } from "@/lib/server";
+import { serializeLook, defaultLookFor } from "@/lib/avatar";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
     const [takenEmail] = await db.select({ id: users.id }).from(users).where(and(eq(users.isDemo, false), sql`lower(${users.email}) = ${email}`)).limit(1);
     if (takenEmail) return Response.json({ error: "Este email já está cadastrado na equipe." }, { status: 409 });
     const [member] = await db.insert(users).values({
-      id: crypto.randomUUID(), name, role, company, avatar: "", color: body.color || "#c7a66e", gender,
+      id: crypto.randomUUID(), name, role, company, avatar: "", color: body.color || "#c7a66e",
+      avatarLook: serializeLook(body.look ?? defaultLookFor(gender)), gender,
       roomId: "recepcao", status: "available", x: 61, y: 73, isDemo: false, isAdmin: false,
       canAccessGroupSystem: body.canAccessGroupSystem === true, email, passwordHash: await hashPassword(password),
       accessToken: null, lastSeen: new Date(0),
@@ -82,6 +84,7 @@ export async function PATCH(request: Request) {
       if (!validColor(body.color)) return Response.json({ error: "Escolha uma cor válida." }, { status: 400 });
       patch.color = body.color;
     }
+    if (body.look !== undefined || body.avatarLook !== undefined) patch.avatarLook = serializeLook(body.look ?? body.avatarLook);
     if (body.gender !== undefined) patch.gender = body.gender === "female" ? "female" : body.gender === "male" ? "male" : null;
     if (typeof body.canAccessGroupSystem === "boolean") patch.canAccessGroupSystem = body.canAccessGroupSystem;
     // Nenhum usuário secundário pode virar administrador.

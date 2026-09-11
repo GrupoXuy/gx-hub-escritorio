@@ -17,6 +17,7 @@ create table if not exists gx_users (
   company text not null default 'Grupo X',
   avatar text not null default '',
   color text not null default '#c7a66e',
+  avatar_look text not null default '',
   room_id text not null default 'recepcao',
   status text not null default 'available',
   x real not null default 61,

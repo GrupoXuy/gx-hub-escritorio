@@ -389,6 +389,7 @@ export function OfficeMap({
               member={data.me}
               size={48}
               own
+              showRing
               action={isSitting ? "sit" : isLocalWalking ? "walk" : (data.me.action || "idle")}
               direction={data.me.direction || "dr"}
               isMoving={isLocalWalking}

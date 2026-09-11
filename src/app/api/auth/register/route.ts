@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { users, invitations } from "@/db/schema";
 import { and, eq, gt, ilike } from "drizzle-orm";
 import { fail, hashPassword, publicMember, seedWorkspace, setSession, validColor, validEmail, validPassword, validProfileText } from "@/lib/server";
+import { serializeLook, defaultLookFor } from "@/lib/avatar";
 
 export async function POST(request: Request) {
   try {
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
     const [member] = await db.insert(users).values({
       id: crypto.randomUUID(), name, role, company, avatar: "", color: body.color || "#c7a66e",
       gender: body.gender === "female" ? "female" : body.gender === "male" ? "male" : null,
+      avatarLook: serializeLook(body.look ?? defaultLookFor(body.gender)),
       roomId: "recepcao", status: "available", x: 61, y: 73, isDemo: false, isAdmin: false,
       canAccessGroupSystem: false, isGuest: false, email, passwordHash: await hashPassword(password), accessToken: null, lastSeen: new Date(0),
     }).returning();

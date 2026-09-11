@@ -4,6 +4,7 @@ import { users, rooms, messages, meetings, invitations, signals, clientInvites }
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { DEFAULT_ME, ROOM_DATA } from "@/lib/workspace";
+import { serializeLook, presetLook } from "@/lib/avatar";
 
 export const HENRIQUE_EMAIL = "carneiroluiz1@hotmail.com";
 export const HENRIQUE_ID = "henrique-senna";
@@ -28,6 +29,7 @@ const DDL_STATEMENTS = [
   `ALTER TABLE gx_users ADD COLUMN IF NOT EXISTS action text NOT NULL DEFAULT 'idle'`,
   `ALTER TABLE gx_users ADD COLUMN IF NOT EXISTS direction text NOT NULL DEFAULT 'dr'`,
   `ALTER TABLE gx_users ADD COLUMN IF NOT EXISTS sitting_on text`,
+  `ALTER TABLE gx_users ADD COLUMN IF NOT EXISTS avatar_look text NOT NULL DEFAULT ''`,
   `CREATE TABLE IF NOT EXISTS gx_messages (id text PRIMARY KEY, sender_id text NOT NULL REFERENCES gx_users(id), room_id text NOT NULL DEFAULT 'geral', content text NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`,
   `CREATE INDEX IF NOT EXISTS gx_messages_created_at_idx ON gx_messages (created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS gx_meetings (id text PRIMARY KEY, title text NOT NULL, description text NOT NULL DEFAULT '', room_id text NOT NULL REFERENCES gx_rooms(id), starts_at timestamptz NOT NULL, duration integer NOT NULL DEFAULT 30, organizer_id text NOT NULL REFERENCES gx_users(id), created_at timestamptz NOT NULL DEFAULT now())`,
@@ -132,7 +134,7 @@ async function ensureHenriqueAdmin() {
   if (!existing) {
     await db.insert(users).values({
       id: "henrique-senna", name: "Henrique Senna", role: "Fundador & CEO", company: "Grupo X",
-      avatar: DEFAULT_ME.avatar, color: "#c7a66e", roomId: "recepcao", status: "available",
+      avatar: DEFAULT_ME.avatar, color: "#c7a66e", avatarLook: serializeLook(presetLook("gx-executivo")), roomId: "recepcao", status: "available",
       x: 61, y: 73, isDemo: false, isAdmin: true, canAccessGroupSystem: true, email: HENRIQUE_EMAIL, passwordHash,
       accessToken: randomToken(), lastSeen: new Date(0),
     }).onConflictDoNothing();
