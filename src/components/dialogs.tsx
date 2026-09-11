@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { UserPlus, Check, Copy, Mail, Link2, LoaderCircle, CalendarDays, Clock3, Users, ArrowUpRight, Search, Monitor, Mic, Video, Volume2, Sparkles, MousePointer2, Headphones, ShieldCheck, ExternalLink, MapPin, Building2, Download, Trash2, ChevronRight, KeyRound, Globe } from "lucide-react";
-import { Modal, Avatar, PixelAvatar, BrandMark, RoomIcon, EmptyState } from "@/components/ui";
+import { Modal, Avatar, BrandMark, RoomIcon, EmptyState } from "@/components/ui";
 import { AvatarStudio } from "@/components/avatar-studio";
 import { parseLook, serializeLook, type AvatarLook } from "@/lib/avatar";
 import { EcosystemLogo, InstagramGlyph } from "@/components/ecosystem-nav";
