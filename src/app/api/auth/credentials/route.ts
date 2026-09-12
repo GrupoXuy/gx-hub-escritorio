@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq, ilike } from "drizzle-orm";
-import { fail, getMember, hashPassword, seedWorkspace, validEmail, validPassword } from "@/lib/server";
+import { and, eq } from "drizzle-orm";
+import { clientKey, emailEquals, fail, getMember, hashPassword, rateLimit, seedWorkspace, validEmail, validPassword } from "@/lib/server";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request) {
@@ -14,7 +14,8 @@ export async function PATCH(request: Request) {
     const password = typeof body.password === "string" ? body.password : "";
     if (!validEmail(email)) return Response.json({ error: "Informe um email válido." }, { status: 400 });
     if (!validPassword(password)) return Response.json({ error: "A senha deve ter ao menos 8 caracteres." }, { status: 400 });
-    const [taken] = await db.select({ id: users.id }).from(users).where(ilike(users.email, email)).limit(1);
+    if (!rateLimit(clientKey(request, "credentials")).ok) return Response.json({ error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." }, { status: 429 });
+    const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.isDemo, false), emailEquals(email))).limit(1);
     if (taken && taken.id !== me.id) return Response.json({ error: "Este email já está em uso." }, { status: 409 });
     const passwordHash = await hashPassword(password);
     await db.update(users).set({ email, passwordHash }).where(eq(users.id, me.id));

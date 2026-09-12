@@ -62,6 +62,17 @@ Este projeto é full-stack com banco de dados, por isso **não pode** ser public
 
 O arquivo `.env` com segredos nunca é enviado ao GitHub (protegido pelo `.gitignore`); use `.env.example` como modelo local.
 
+## Primeiro acesso do administrador
+
+A conta do **Henrique Senna** é criada sozinha no primeiro acesso ao banco. Defina `GX_ADMIN_INITIAL_PASSWORD` como **secret** (na Vercel: Project → Settings → Environment Variables; localmente: `.env`):
+
+- **Com a variável:** a conta é criada com essa senha, e você entra com ela uma primeira vez.
+- **Sem a variável:** a conta é criada **sem senha** — o app sobe e `/api/health` responde, mas ninguém consegue entrar como administrador até que uma senha seja definida. Nesse caso o servidor registra um aviso no log.
+
+A senha inicial serve **apenas** para criar a conta num banco novo ou recuperar uma conta sem senha: **ela nunca sobrescreve uma senha já definida**. Depois de trocar a senha pela interface, ela persiste — inclusive entre cold starts.
+
+Nunca commite esse valor. Consulte `.env.example` para a lista completa de variáveis.
+
 ## Tecnologia
 
 Next.js App Router, React, TypeScript, Drizzle ORM e PostgreSQL. A conexão usa `DATABASE_URL` e o cliente de `src/db/index.ts`. As tabelas estão em `src/db/schema.ts`.
