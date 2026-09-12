@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Building2, Video, Users, CalendarDays, ChevronRight, ChevronsUpDown, ArrowUpRight, UserPlus, Search, Bell, CircleHelp, Menu, X, Clock3, UserRoundPen, Plus, Wifi, WifiOff, Settings2, Sparkles, Check, Info, PhoneOff, Maximize2, Headphones, ShieldCheck, LogOut, Globe2 } from "lucide-react";
+import { Building2, Video, Users, CalendarDays, ChevronRight, ChevronsUpDown, ArrowUpRight, UserPlus, Search, Bell, CircleHelp, Menu, X, Clock3, UserRoundPen, Plus, Wifi, WifiOff, Settings2, Sparkles, Check, Info, PhoneOff, Maximize2, Headphones, ShieldCheck, LogOut, Globe2, LoaderCircle } from "lucide-react";
 import { BrandMark, Avatar, IconButton } from "@/components/ui";
 import { OfficeMap } from "@/components/office-map";
 import { SocialPanel } from "@/components/social-panel";
@@ -29,26 +29,17 @@ const HEADINGS: Record<View, { eyebrow: string; title: string; description: stri
 };
 
 export default function WorkspaceApp() {
-  const { data, setData, connected, error, refresh, updateMe, authNeeded, roster, login, loginEmail, claim, register, saveCredentials, logout } = useWorkspace();
-  const [view, setView] = useState<View>(() => {
-    if (typeof window !== "undefined") {
-      const next = new URLSearchParams(window.location.search).get("view");
-      if (NAV.some((n) => n.id === next)) return next as View;
-    }
-    return "office";
-  });
+  const { data, setData, connected, error, ready, refresh, updateMe, authNeeded, roster, login, loginEmail, claim, register, saveCredentials, logout } = useWorkspace();
+  // Estados que dependem de window (URL, localStorage) começam com o valor do
+  // servidor e são sincronizados no efeito de montagem. Inicializá-los lendo o
+  // navegador fazia o primeiro render do cliente divergir do HTML hidratado
+  // (ex.: recarregar com ?view=team ou abrir um link de convite).
+  const [view, setView] = useState<View>("office");
   const [activeRoom, setActiveRoom] = useState("all");
   const [dialog, setDialog] = useState<Dialog>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notificationsRead, setNotificationsRead] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        return localStorage.getItem("gx-notifications-read") === "true";
-      } catch {}
-    }
-    return false;
-  });
+  const [notificationsRead, setNotificationsRead] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(() => {
     if (typeof window !== "undefined") {
@@ -61,18 +52,7 @@ export default function WorkspaceApp() {
   });
   const [clock, setClock] = useState("");
   const [reaction, setReaction] = useState("");
-  const [inviteToken, setInviteToken] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return new URLSearchParams(window.location.search).get("invite") || "";
-    }
-    return "";
-  });
-  const [accessToken, setAccessToken] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return new URLSearchParams(window.location.search).get("acesso") || "";
-    }
-    return "";
-  });
+  const [inviteToken, setInviteToken] = useState("");
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const movementTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,6 +88,14 @@ export default function WorkspaceApp() {
       const next = new URLSearchParams(window.location.search).get("view");
       setView(NAV.some((n) => n.id === next) ? (next as View) : "office");
     };
+    const syncFromBrowser = () => {
+      fromUrl();
+      try {
+        setNotificationsRead(localStorage.getItem("gx-notifications-read") === "true");
+      } catch {}
+      setInviteToken(new URLSearchParams(window.location.search).get("invite") || "");
+    };
+    syncFromBrowser();
     window.addEventListener("popstate", fromUrl);
     const tick = () =>
       setClock(
@@ -227,6 +215,13 @@ export default function WorkspaceApp() {
   const hasGroupSystemAccess = data.me.isAdmin || data.me.canAccessGroupSystem;
   const findMember = (id: string) => data.team.find(m => m.id === id) || data.members.find(m => m.id === id);
 
+  // Enquanto a primeira resposta do workspace não chega, não dá para saber se
+  // há sessão: renderizar o escritório aqui exibia o mapa com um "você"
+  // provisório (dados padrão) antes do login — inclusive para visitantes.
+  if (!ready) {
+    return <div className="app-boot" role="status" aria-label="Carregando o escritório"><BrandMark size={48} /><LoaderCircle size={18} className="spin" /></div>;
+  }
+
   if (authNeeded) {
     return <><AuthGate inviteToken={inviteToken} onLoginEmail={loginEmail} onRegister={register} />
       {toast && <div className="toast" key={toast.key} role="status"><span><Info size={18} /></span><p>{toast.message}</p><button aria-label="Fechar aviso" onClick={() => setToast(null)}><X size={16} /></button></div>}</>;
@@ -285,7 +280,10 @@ export default function WorkspaceApp() {
       )}
       <footer className="workspace-footer"><span><span className="footer-x">X</span>Um ecossistema. Infinitas possibilidades.</span><span>Feito para aproximar.<Sparkles size={11} /></span></footer>
     </main></div>
-    {dialog?.type === "profile" && <ProfileDialog me={data.me} onSave={saveProfile} onSaveCredentials={data.me.isAdmin ? saveCredentials : undefined} onClose={close} />}
+    {/* key por identidade: se o diálogo abrir antes de a sessão real chegar
+        (dados padrão) ele remonta com o look correto em vez de manter um
+        visual provisório que, se salvo, sobrescreveria o look persistido. */}
+    {dialog?.type === "profile" && <ProfileDialog key={data.me.id} me={data.me} onSave={saveProfile} onSaveCredentials={data.me.isAdmin ? saveCredentials : undefined} onClose={close} />}
     {dialog?.type === "invite" && <InviteDialog roomId={call.roomId} onClose={close} />}
     {dialog?.type === "users" && <UsersDialog me={data.me} onChanged={() => void refresh()} notify={notify} onClose={close} />}
     {dialog?.type === "leads" && <LeadsDialog notify={notify} onClose={close} />}

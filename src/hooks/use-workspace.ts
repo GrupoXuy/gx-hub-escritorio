@@ -6,6 +6,7 @@ export function useWorkspace() {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState("");
   const [authNeeded, setAuthNeeded] = useState(false);
+  const [ready, setReady] = useState(false);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [inviteRequired, setInviteRequired] = useState(true);
   const fetching = useRef(false);
@@ -27,7 +28,7 @@ export function useWorkspace() {
         setConnected(false); setError(err instanceof Error ? err.message : "Não foi possível conectar ao escritório.");
       }
     }
-    finally { fetching.current = false; }
+    finally { fetching.current = false; setReady(true); }
   }, []);
   useEffect(() => {
     void refresh();
@@ -45,19 +46,19 @@ export function useWorkspace() {
       return me;
     } finally { mutating.current--; if (mutating.current === 0) void refresh(); }
   }, [refresh]);
+  // Os fluxos de autenticação buscam o workspace ANTES de revelá-lo: revelar
+  // primeiro (setAuthNeeded(false) seguido de refresh) exibia o escritório com
+  // os dados padrão da sessão anterior durante a busca.
   const login = useCallback(async (userId: string) => {
     await api("/api/auth/login", { method: "POST", body: JSON.stringify({ userId }) });
-    setAuthNeeded(false);
     await refresh();
   }, [refresh]);
   const claim = useCallback(async (token: string) => {
     await api("/api/auth/claim", { method: "POST", body: JSON.stringify({ token }) });
-    setAuthNeeded(false);
     await refresh();
   }, [refresh]);
   const loginEmail = useCallback(async (email: string, password: string) => {
     await api("/api/auth/password", { method: "POST", body: JSON.stringify({ email, password }) });
-    setAuthNeeded(false);
     await refresh();
   }, [refresh]);
   const saveCredentials = useCallback(async (email: string, password: string) => {
@@ -65,13 +66,11 @@ export function useWorkspace() {
   }, []);
   const register = useCallback(async (payload: { name: string; role: string; company: string; color: string; gender: string; look?: string; inviteToken: string; email: string; password: string }) => {
     await api("/api/auth/register", { method: "POST", body: JSON.stringify(payload) });
-    setAuthNeeded(false);
     await refresh();
   }, [refresh]);
   const logout = useCallback(async () => {
     try { await api("/api/auth/logout", { method: "POST" }); } catch {}
-    setAuthNeeded(true);
     await refresh();
   }, [refresh]);
-  return { data, setData, connected, error, refresh, updateMe, authNeeded, roster, inviteRequired, login, loginEmail, claim, register, saveCredentials, logout };
+  return { data, setData, connected, error, ready, refresh, updateMe, authNeeded, roster, inviteRequired, login, loginEmail, claim, register, saveCredentials, logout };
 }
