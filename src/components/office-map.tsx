@@ -272,12 +272,12 @@ export function OfficeMap({
 
           {/* Interactive Furniture Hotspots */}
           {FLOOR_1_FURNITURE.map((spot) => {
-            const isSpotOccupied = data.members.some((m) => m.sittingOn === spot.id && m.id !== data.me.id);
-            const isMeSittingHere = data.me.sittingOn === spot.id;
+            const isSpotOccupied = data.members.some((m) => m.sittingOn === spot.id);
+            if (isSpotOccupied) return null;
             return (
               <button
                 key={spot.id}
-                className={`furniture-hotspot ${spot.type} ${isSpotOccupied ? "occupied" : ""} ${isMeSittingHere ? "me-seated" : ""}`}
+                className={`furniture-hotspot ${spot.type}`}
                 style={{ left: `${spot.x}%`, top: `${spot.y}%`, zIndex: 90 + Math.round(spot.y) }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -292,7 +292,7 @@ export function OfficeMap({
                 <span className="furniture-icon">
                   <Armchair size={11} />
                 </span>
-                {hoveredFurniture?.id === spot.id && !isMeSittingHere && (
+                {hoveredFurniture?.id === spot.id && (
                   <span className="furniture-hover-badge">
                     {spot.actionLabel}
                   </span>
