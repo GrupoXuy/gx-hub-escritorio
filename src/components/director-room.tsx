@@ -91,6 +91,7 @@ export function DirectorRoom({
     if (walkTimer.current) clearTimeout(walkTimer.current);
     walkTimer.current = setTimeout(() => {
       setIsLocalWalking(false);
+      setWaypoint(null);
       onMove(roundedX, roundedY, "idle", dir, null);
     }, durationMs);
 
@@ -111,6 +112,7 @@ export function DirectorRoom({
     if (walkTimer.current) clearTimeout(walkTimer.current);
     walkTimer.current = setTimeout(() => {
       setIsLocalWalking(false);
+      setWaypoint(null);
       onMove(spot.x, spot.y, "sit", spot.direction, spot.id);
     }, durationMs);
 
@@ -352,7 +354,7 @@ export function DirectorRoom({
               member={data.me}
               size={48}
               own
-              showRing
+              showRing={!isSitting}
               action={isSitting ? "sit" : isLocalWalking ? "walk" : (data.me.action || "idle")}
               direction={data.me.direction || "dr"}
               isMoving={isLocalWalking}
