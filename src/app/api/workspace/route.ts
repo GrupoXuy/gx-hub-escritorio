@@ -71,7 +71,18 @@ export async function PATCH(request: Request) {
     if (typeof body.handRaised === "boolean") patch.handRaised = body.handRaised;
     if (body.action !== undefined && ["idle", "walk", "sit", "wave"].includes(body.action)) patch.action = body.action;
     if (body.direction !== undefined && ["dr", "dl", "ur", "ul"].includes(body.direction)) patch.direction = body.direction;
-    if (body.sittingOn !== undefined) patch.sittingOn = typeof body.sittingOn === "string" ? body.sittingOn.slice(0, 60) : null;
+    if (body.sittingOn !== undefined) {
+      patch.sittingOn = typeof body.sittingOn === "string" ? body.sittingOn.slice(0, 60) : null;
+      if (patch.sittingOn) {
+        const [occupant] = await db.select({ id: users.id }).from(users).where(and(
+          eq(users.sittingOn, patch.sittingOn),
+          gt(users.lastSeen, new Date(Date.now() - 90000)),
+        )).limit(1);
+        if (occupant && occupant.id !== me.id) {
+          return Response.json({ error: "Este assento já está ocupado." }, { status: 409 });
+        }
+      }
+    }
     const [updated] = await db.update(users).set(patch).where(and(eq(users.id, me.id), eq(users.isDemo, false))).returning();
     return Response.json(publicMember(updated));
   } catch (error) { return fail(error); }

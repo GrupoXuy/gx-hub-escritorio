@@ -244,12 +244,12 @@ export function DirectorRoom({
 
           {/* Interactive Executive Furniture Hotspots */}
           {FLOOR_2_FURNITURE.map((spot) => {
-            const isSpotOccupied = adminsInRoom.some((m) => m.sittingOn === spot.id);
-            const isMeSittingHere = data.me.sittingOn === spot.id;
+            const isSpotOccupied = data.members.some((m) => m.sittingOn === spot.id);
+            if (isSpotOccupied) return null;
             return (
               <button
                 key={spot.id}
-                className={`furniture-hotspot ${spot.type} ${isSpotOccupied ? "occupied" : ""} ${isMeSittingHere ? "me-seated" : ""}`}
+                className={`furniture-hotspot ${spot.type}`}
                 style={{ left: `${spot.x}%`, top: `${spot.y}%`, zIndex: 90 + Math.round(spot.y) }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -264,7 +264,7 @@ export function DirectorRoom({
                 <span className="furniture-icon">
                   <Armchair size={11} />
                 </span>
-                {hoveredFurniture?.id === spot.id && !isMeSittingHere && (
+                {hoveredFurniture?.id === spot.id && (
                   <span className="furniture-hover-badge">
                     {spot.actionLabel}
                   </span>
