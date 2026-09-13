@@ -2,7 +2,13 @@ import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
-const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:3000';
+const base = process.env.GX_TEST_BASE_URL || process.env.TEST_BASE_URL || 'http://127.0.0.1:3000';
+const email = process.env.GX_TEST_EMAIL ?? '';
+const password = process.env.GX_TEST_PASSWORD ?? '';
+if (!email || !password) {
+  console.error('Defina GX_TEST_EMAIL e GX_TEST_PASSWORD (use .env.example como modelo).');
+  process.exit(1);
+}
 mkdirSync('artifacts', { recursive: true });
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
 const errors = [];
@@ -15,8 +21,8 @@ try {
   await page.goto(base, { waitUntil: 'networkidle' });
   // Login como Henrique com email e senha
   await page.getByRole('heading', { name: 'Seu escritório, sem fronteiras.' }).waitFor({ timeout: 15000 });
-  await page.getByLabel('Email', { exact: true }).fill('carneiroluiz1@hotmail.com');
-  await page.getByLabel('Senha', { exact: true }).fill('255914Lh@');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Senha', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Entrar no escritório', exact: true }).click();
   await page.getByText('Conexão estável', { exact: true }).waitFor({ timeout: 15000 });
 

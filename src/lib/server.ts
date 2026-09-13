@@ -8,7 +8,11 @@ import { serializeLook, presetLook } from "@/lib/avatar";
 
 export const HENRIQUE_EMAIL = "carneiroluiz1@hotmail.com";
 export const HENRIQUE_ID = "henrique-senna";
-const HENRIQUE_DEFAULT_PASSWORD = "255914Lh@";
+// Senha inicial do administrador, lida do ambiente — nunca versionada.
+// Serve apenas para criar a conta num banco novo ou recuperar uma conta que
+// ficou sem senha. Jamais sobrescreve uma senha já definida (ver
+// ensureHenriqueAdmin). Configure como secret na Vercel/local.
+const HENRIQUE_INITIAL_PASSWORD = process.env.GX_ADMIN_INITIAL_PASSWORD ?? "";
 
 export function isHenriqueAdmin(member: { id: string; email?: string | null; isAdmin?: boolean }) {
   return member.isAdmin === true && (member.id === HENRIQUE_ID || member.email?.trim().toLowerCase() === HENRIQUE_EMAIL);
@@ -95,7 +99,16 @@ async function cleanupDemoData() {
 }
 
 async function cleanupTestData() {
-  const testRows = await db.select({ id: users.id }).from(users).where(and(ilike(users.name, "teste%"), eq(users.isAdmin, false)));
+  // Exige os DOIS marcadores de teste, não só o nome. Casar apenas por
+  // `name ILIKE 'teste%'` apagava qualquer membro real chamado "Teste…" no
+  // próximo cold start. Os scripts de verificação criam usuários com nome
+  // "Teste Membro <timestamp>" E email "test.user.<timestamp>@example.com"
+  // (ver scripts/verify-workspace.mjs), então os dois juntos identificam um
+  // usuário descartável sem risco de atingir uma pessoa real.
+  const testRows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(ilike(users.name, "teste%"), ilike(users.email, "test.user.%@%"), eq(users.isAdmin, false)));
   const testIds = testRows.map(row => row.id);
   if (testIds.length) {
     await db.delete(signals).where(or(inArray(signals.fromId, testIds), inArray(signals.toId, testIds)));
@@ -130,8 +143,11 @@ async function deduplicateHenrique() {
 
 async function ensureHenriqueAdmin() {
   const [existing] = await db.select().from(users).where(and(eq(users.name, "Henrique Senna"), eq(users.isDemo, false))).limit(1);
-  const passwordHash = await bcrypt.hash(HENRIQUE_DEFAULT_PASSWORD, 10);
   if (!existing) {
+    const passwordHash = HENRIQUE_INITIAL_PASSWORD ? await hashPassword(HENRIQUE_INITIAL_PASSWORD) : null;
+    if (!passwordHash) {
+      console.warn("GX workspace: GX_ADMIN_INITIAL_PASSWORD não definida. A conta do Henrique Senna será criada sem senha e não poderá entrar até que uma senha seja definida.");
+    }
     await db.insert(users).values({
       id: "henrique-senna", name: "Henrique Senna", role: "Fundador & CEO", company: "Grupo X",
       avatar: DEFAULT_ME.avatar, color: "#c7a66e", avatarLook: serializeLook(presetLook("gx-executivo")), roomId: "recepcao", status: "available",
@@ -145,7 +161,11 @@ async function ensureHenriqueAdmin() {
   if (!existing.canAccessGroupSystem) patch.canAccessGroupSystem = true;
   if (!existing.accessToken) patch.accessToken = randomToken();
   if (existing.email !== HENRIQUE_EMAIL) patch.email = HENRIQUE_EMAIL;
-  if (!existing.passwordHash || existing.passwordHash !== passwordHash) patch.passwordHash = passwordHash;
+  // A senha do administrador NUNCA é reescrita quando já existe uma definida.
+  // bcrypt sorteia um salt novo a cada chamada, então comparar o hash guardado
+  // com um hash recém-gerado retorna sempre diferente — o que fazia a senha
+  // escolhida pela interface voltar ao valor padrão em cada cold start.
+  if (!existing.passwordHash && HENRIQUE_INITIAL_PASSWORD) patch.passwordHash = await hashPassword(HENRIQUE_INITIAL_PASSWORD);
   if (Object.keys(patch).length) {
     await db.update(users).set(patch).where(eq(users.id, existing.id));
   }
@@ -175,7 +195,7 @@ export async function getCallMember(): Promise<MemberRow | null> {
 
 export async function setGuestSession(id: string, maxAgeSeconds: number) {
   const jar = await cookies();
-  jar.set("gx_guest_session", id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: Math.max(60, maxAgeSeconds) });
+  jar.set("gx_guest_session", id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: Math.max(60, maxAgeSeconds), secure: process.env.NODE_ENV === "production" });
 }
 
 export async function clearGuestSession() {
@@ -185,7 +205,7 @@ export async function clearGuestSession() {
 
 export async function setSession(id: string) {
   const jar = await cookies();
-  jar.set("gx_session", id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 90 });
+  jar.set("gx_session", id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 90, secure: process.env.NODE_ENV === "production" });
 }
 
 export async function clearSession() {
@@ -205,6 +225,19 @@ export function validEmail(value: unknown) {
   return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim()) && value.trim().length <= 120;
 }
 
+/**
+ * Comparação de email exata e insensível a caixa.
+ *
+ * Não use `ilike(users.email, email)`: o ILIKE trata o valor enviado pela
+ * pessoa como um *padrão* SQL LIKE, então "_" e "%" viram curingas. Na prática
+ * "ana_silva@teste.com" ou "ana%@teste.com" autenticavam na conta
+ * "ana.silva@teste.com", e um curinga largo combinado com uma senha conhecida
+ * permitia entrar na primeira conta compatível do banco.
+ */
+export function emailEquals(email: string) {
+  return sql`lower(${users.email}) = ${email.trim().toLowerCase()}`;
+}
+
 export function validPassword(value: unknown) {
   return typeof value === "string" && value.length >= 8 && value.length <= 200;
 }
@@ -221,6 +254,41 @@ export function hashPassword(password: string) {
 export function stripSecrets<T extends { passwordHash?: string | null }>(member: T): Omit<T, "passwordHash"> {
   const { passwordHash: _drop, ...rest } = member;
   return rest;
+}
+
+/**
+ * Limitador de tentativas em memória, por instância.
+ *
+ * IMPORTANTE: em funções serverless (Vercel) cada instância mantém sua própria
+ * contagem, então isto desencoraja força bruta casual e slowing down, mas NÃO
+ * é uma proteção distribuída. Para bloqueio global use um store compartilhado
+ * (Upstash/Redis, Vercel KV ou similar) no lugar deste Map.
+ */
+type Bucket = { count: number; resetAt: number };
+const ATTEMPT_BUCKETS = new Map<string, Bucket>();
+const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+const ATTEMPT_LIMIT = 10;
+const ATTEMPT_MAX_KEYS = 10_000;
+
+export function clientKey(request: Request, scope: string) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip")?.trim() || "unknown";
+  return `${scope}:${ip}`;
+}
+
+export function rateLimit(key: string, limit = ATTEMPT_LIMIT, windowMs = ATTEMPT_WINDOW_MS) {
+  const now = Date.now();
+  const bucket = ATTEMPT_BUCKETS.get(key);
+  if (!bucket || now >= bucket.resetAt) {
+    if (ATTEMPT_BUCKETS.size > ATTEMPT_MAX_KEYS) {
+      for (const [candidate, value] of ATTEMPT_BUCKETS) if (now >= value.resetAt) ATTEMPT_BUCKETS.delete(candidate);
+    }
+    ATTEMPT_BUCKETS.set(key, { count: 1, resetAt: now + windowMs });
+    return { ok: true as const, remaining: limit - 1 };
+  }
+  bucket.count += 1;
+  if (bucket.count > limit) return { ok: false as const, remaining: 0 };
+  return { ok: true as const, remaining: limit - bucket.count };
 }
 
 export function fail(error: unknown, message = "O workspace está temporariamente indisponível. Tente novamente.") {

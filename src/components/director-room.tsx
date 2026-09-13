@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { ShieldCheck, ArrowLeft, Maximize2, Minimize2, Minus, Plus, LocateFixed, MousePointer2, Mic, MicOff, Video, VideoOff, MonitorUp, Hand, Smile, Settings2, ChevronDown, Check, ArrowUpRight, PhoneOff, Lock, Armchair } from "lucide-react";
 import { Avatar, PixelAvatar, IconButton, RoomIcon } from "@/components/ui";
-import { STATUS_LABELS, FLOOR_2_FURNITURE, type Workspace, type Member, type Room, type FurnitureSpot, type Direction, type AvatarAction } from "@/lib/workspace";
+import { STATUS_LABELS, FLOOR_2_FURNITURE, seatAnchor, type Workspace, type Member, type Room, type FurnitureSpot, type Direction, type AvatarAction } from "@/lib/workspace";
 import type { CallController } from "@/hooks/use-call";
 
 type Props = {
@@ -99,29 +99,35 @@ export function DirectorRoom({
   };
 
   const handleSitOnFurniture = (spot: FurnitureSpot) => {
-    const dx = spot.x - data.me.x;
-    const dy = spot.y - data.me.y;
+    const anchor = seatAnchor(spot);
+    const dx = anchor.approach.x - data.me.x;
+    const dy = anchor.approach.y - data.me.y;
     const dist = Math.hypot(dx, dy);
     const speed = 28;
     const durationMs = Math.max(250, Math.min(2000, Math.round((dist / speed) * 1000)));
     const durationSec = durationMs / 1000;
     setWalkDurationSec(durationSec);
 
-    setWaypoint({ x: spot.x, y: spot.y, key: ++waypointSeq.current });
+    setWaypoint({ x: anchor.approach.x, y: anchor.approach.y, key: ++waypointSeq.current });
     setIsLocalWalking(true);
     if (walkTimer.current) clearTimeout(walkTimer.current);
+    // A caminhada já sai alinhada na direção do assento; ao chegar no ponto de
+    // aproximação, senta. Ponto de assento e de saída são ajustáveis por
+    // assento via `offsets` em src/lib/workspace.ts, sem afetar os demais.
     walkTimer.current = setTimeout(() => {
       setIsLocalWalking(false);
       setWaypoint(null);
-      onMove(spot.x, spot.y, "sit", spot.direction, spot.id);
+      onMove(anchor.seat.x, anchor.seat.y, "sit", anchor.rotation, spot.id);
     }, durationMs);
 
-    onMove(spot.x, spot.y, "walk", spot.direction, spot.id);
+    onMove(anchor.approach.x, anchor.approach.y, "walk", anchor.rotation, spot.id);
   };
 
   const standUp = () => {
     setIsLocalWalking(false);
-    onMove(data.me.x, Math.min(85, data.me.y + 2.5), "idle", "dr", null);
+    const spot = FLOOR_2_FURNITURE.find((item) => item.id === data.me.sittingOn);
+    const target = spot ? seatAnchor(spot).stand : { x: data.me.x, y: Math.min(85, data.me.y + 2.5) };
+    onMove(target.x, target.y, "idle", data.me.direction || "dr", null);
   };
 
   const keyMove = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -209,7 +215,7 @@ export function DirectorRoom({
       </div>
 
       <div
-        className="office-scene"
+        className="office-scene director-scene"
         tabIndex={0}
         role="application"
         aria-label="Clique no chão para andar ou nas mobílias executivas para sentar. Use setas ou W A S D."

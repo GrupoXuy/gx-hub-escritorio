@@ -49,16 +49,12 @@ export function useWorkspace() {
   // Os fluxos de autenticação buscam o workspace ANTES de revelá-lo: revelar
   // primeiro (setAuthNeeded(false) seguido de refresh) exibia o escritório com
   // os dados padrão da sessão anterior durante a busca.
-  const login = useCallback(async (userId: string) => {
-    await api("/api/auth/login", { method: "POST", body: JSON.stringify({ userId }) });
-    await refresh();
-  }, [refresh]);
   const claim = useCallback(async (token: string) => {
     await api("/api/auth/claim", { method: "POST", body: JSON.stringify({ token }) });
     await refresh();
   }, [refresh]);
   const loginEmail = useCallback(async (email: string, password: string) => {
-    await api("/api/auth/password", { method: "POST", body: JSON.stringify({ email, password }) });
+    await api("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
     await refresh();
   }, [refresh]);
   const saveCredentials = useCallback(async (email: string, password: string) => {
@@ -72,5 +68,5 @@ export function useWorkspace() {
     try { await api("/api/auth/logout", { method: "POST" }); } catch {}
     await refresh();
   }, [refresh]);
-  return { data, setData, connected, error, ready, refresh, updateMe, authNeeded, roster, inviteRequired, login, loginEmail, claim, register, saveCredentials, logout };
+  return { data, setData, connected, error, ready, refresh, updateMe, authNeeded, roster, inviteRequired, loginEmail, claim, register, saveCredentials, logout };
 }

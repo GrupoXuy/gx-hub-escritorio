@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { users, invitations } from "@/db/schema";
-import { and, eq, gt, ilike } from "drizzle-orm";
-import { fail, hashPassword, publicMember, seedWorkspace, setSession, validColor, validEmail, validPassword, validProfileText } from "@/lib/server";
+import { and, eq, gt } from "drizzle-orm";
+import { clientKey, emailEquals, fail, hashPassword, publicMember, rateLimit, seedWorkspace, setSession, validColor, validEmail, validPassword, validProfileText } from "@/lib/server";
 import { serializeLook, defaultLookFor } from "@/lib/avatar";
 
 export async function POST(request: Request) {
@@ -9,6 +9,7 @@ export async function POST(request: Request) {
     await seedWorkspace();
     const body = await request.json();
     const inviteToken = typeof body.inviteToken === "string" ? body.inviteToken.trim() : "";
+    if (!rateLimit(clientKey(request, "register"), 5).ok) return Response.json({ error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." }, { status: 429 });
     const [invite] = await db.select().from(invitations).where(and(eq(invitations.id, inviteToken), gt(invitations.expiresAt, new Date()))).limit(1);
     if (!invite) return Response.json({ error: "Convite inválido ou expirado. Peça um novo convite ao Henrique Senna." }, { status: 403 });
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
     if (body.color !== undefined && !validColor(body.color)) return Response.json({ error: "Escolha uma cor válida." }, { status: 400 });
     const [nameTaken] = await db.select({ id: users.id }).from(users).where(and(eq(users.isDemo, false), eq(users.name, name))).limit(1);
     if (nameTaken) return Response.json({ error: "Este nome já está cadastrado." }, { status: 409 });
-    const [emailTaken] = await db.select({ id: users.id }).from(users).where(and(eq(users.isDemo, false), ilike(users.email, email))).limit(1);
+    const [emailTaken] = await db.select({ id: users.id }).from(users).where(and(eq(users.isDemo, false), emailEquals(email))).limit(1);
     if (emailTaken) return Response.json({ error: "Este email já está cadastrado." }, { status: 409 });
     const [member] = await db.insert(users).values({
       id: crypto.randomUUID(), name, role, company, avatar: "", color: body.color || "#c7a66e",
