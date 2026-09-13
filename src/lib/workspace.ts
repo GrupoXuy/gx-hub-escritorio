@@ -147,13 +147,11 @@ export const FLOOR_1_FURNITURE: FurnitureSpot[] = [
 ];
 
 export const FLOOR_2_FURNITURE: FurnitureSpot[] = [
-  // Presidência (Mesa de Vidro com Computador)
-  { id: "f2-pres-desk", label: "Cadeira da Presidência", actionLabel: "Sentar na mesa presidencial de vidro", x: 47, y: 39.5, direction: "dr", type: "desk", room: "diretoria", floor: 2 },
-  { id: "f2-guest-1", label: "Poltrona Executiva 1", actionLabel: "Sentar como convidado", x: 41, y: 48.5, direction: "dr", type: "armchair", room: "diretoria", floor: 2 },
-  { id: "f2-guest-2", label: "Poltrona Executiva 2", actionLabel: "Sentar como convidado", x: 55.5, y: 49.5, direction: "dl", type: "armchair", room: "diretoria", floor: 2 },
-  // Lounge Executivo
-  { id: "f2-sofa", label: "Sofá Executivo Privado", actionLabel: "Sentar no lounge executivo", x: 31, y: 65, direction: "dr", type: "sofa", room: "diretoria", floor: 2 },
-  { id: "f2-armchair", label: "Poltrona Relax", actionLabel: "Sentar na poltrona executiva", x: 24.5, y: 66, direction: "ur", type: "armchair", room: "diretoria", floor: 2 },
+  { id: "f2-pres-desk", label: "Cadeira da Presidência", actionLabel: "Sentar na mesa presidencial de vidro", x: 37.29, y: 49.96, direction: "dr", type: "desk", room: "diretoria", floor: 2 },
+  { id: "f2-guest-1", label: "Poltrona Executiva 1", actionLabel: "Sentar como convidado", x: 77, y: 53.86, direction: "dr", type: "armchair", room: "diretoria", floor: 2 },
+  { id: "f2-guest-2", label: "Poltrona Executiva 2", actionLabel: "Sentar como convidado", x: 71, y: 51.07, direction: "dl", type: "armchair", room: "diretoria", floor: 2 },
+  { id: "f2-sofa", label: "Sofá Executivo Privado", actionLabel: "Sentar no lounge executivo", x: 42.86, y: 61.1, direction: "ul", type: "sofa", room: "diretoria", floor: 2 },
+  { id: "f2-armchair", label: "Poltrona Relax", actionLabel: "Sentar na poltrona executiva", x: 49.43, y: 56.92, direction: "ur", type: "armchair", room: "diretoria", floor: 2 },
 ];
 export const COMPANY_DATA = [
   { name: "Grupo X", category: "Ecossistema empresarial", description: "Construindo empresas. Desenvolvendo empresários. Criando oportunidades.", color: "#c7a66e" },
