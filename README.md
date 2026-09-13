@@ -45,8 +45,8 @@ O segundo script recusa alterações não commitadas, envia a `main` para `Grupo
 
 ## Deploy permanente (GitHub + Vercel + Neon) — ✅ ATIVO
 
-- **Link oficial de acesso:** https://gxhubofficemeet.vercel.app
-- **Deploy atual da Vercel:** https://gx-hub-escritorio.vercel.app (fallback enquanto o alias `gxhubofficemeet.vercel.app` é associado ao projeto)
+- **Link oficial de acesso (produção):** https://gxhubofficemeet.vercel.app
+- **`gx-hub-escritorio.vercel.app`** redireciona para o domínio oficial (confirmado em 13/09/2026) — é alias do mesmo projeto, não um deploy separado.
 - **Código:** https://github.com/GrupoXuy/gx-hub-escritorio (push na `main` gera deploy automático de produção)
 - **Banco:** Postgres Neon `neon-carmine-envelope` conectado ao projeto (compartilhado com o app `gx-hub`; tabelas deste app usam o prefixo `gx_`). As tabelas são criadas sozinhas no primeiro acesso (`seedWorkspace` em `src/lib/server.ts`); `migrations/0001_init.sql` e `migrations/0002_avatar_look.sql` servem como referência/documentação do schema. O visual escolhido por cada pessoa fica em `gx_users.avatar_look` (JSON validado no servidor por `sanitizeLook`); sem escolha salva, o avatar usa um visual determinístico derivado do id.
 - **Acesso protegido ao sistema Grupo X:** `https://gxhubuy.lovable.app/`. Henrique Senna recebe acesso por padrão; cada membro pode ser autorizado individualmente pelo administrador em **Gerenciar usuários → Acesso ao sistema Grupo X**. O botão só aparece para quem tem essa permissão.
