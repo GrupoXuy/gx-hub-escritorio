@@ -29,7 +29,7 @@ const HEADINGS: Record<View, { eyebrow: string; title: string; description: stri
 };
 
 export default function WorkspaceApp() {
-  const { data, setData, connected, error, ready, refresh, updateMe, authNeeded, roster, login, loginEmail, claim, register, saveCredentials, logout } = useWorkspace();
+  const { data, setData, connected, error, ready, refresh, updateMe, authNeeded, roster, loginEmail, claim, register, saveCredentials, logout } = useWorkspace();
   // Estados que dependem de window (URL, localStorage) começam com o valor do
   // servidor e são sincronizados no efeito de montagem. Inicializá-los lendo o
   // navegador fazia o primeiro render do cliente divergir do HTML hidratado

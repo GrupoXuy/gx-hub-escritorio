@@ -99,7 +99,16 @@ async function cleanupDemoData() {
 }
 
 async function cleanupTestData() {
-  const testRows = await db.select({ id: users.id }).from(users).where(and(ilike(users.name, "teste%"), eq(users.isAdmin, false)));
+  // Exige os DOIS marcadores de teste, não só o nome. Casar apenas por
+  // `name ILIKE 'teste%'` apagava qualquer membro real chamado "Teste…" no
+  // próximo cold start. Os scripts de verificação criam usuários com nome
+  // "Teste Membro <timestamp>" E email "test.user.<timestamp>@example.com"
+  // (ver scripts/verify-workspace.mjs), então os dois juntos identificam um
+  // usuário descartável sem risco de atingir uma pessoa real.
+  const testRows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(ilike(users.name, "teste%"), ilike(users.email, "test.user.%@%"), eq(users.isAdmin, false)));
   const testIds = testRows.map(row => row.id);
   if (testIds.length) {
     await db.delete(signals).where(or(inArray(signals.fromId, testIds), inArray(signals.toId, testIds)));

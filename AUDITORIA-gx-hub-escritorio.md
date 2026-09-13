@@ -19,9 +19,9 @@ Diferente de uma auditoria só estática: todos os achados de severidade **crít
 | 5 | Média | Cookie de sessão sem flag `Secure` | ✅ Corrigido |
 | 6 | Baixa | `GX_ADMIN_INITIAL_PASSWORD` documentada mas **não implementada** | ✅ Implementada |
 | 7 | Baixa | `GX_TEST_BASE_URL` (Playwright) vs `TEST_BASE_URL` (scripts) | ✅ Unificado |
-| 8 | Baixa | `cleanupTestData()` apaga usuários reais por prefixo de nome | ⚠️ Aberto |
-| 9 | Info | `/api/auth/password` não troca senha — é um segundo endpoint de login | ⚠️ Aberto (não é falha de segurança) |
-| 10 | Info | `/api/auth/login` é rota órfã (sempre HTTP 400) | ⚠️ Aberto (código morto) |
+| 8 | Baixa | `cleanupTestData()` apagava usuários reais por prefixo de nome | ✅ Corrigido |
+| 9 | Info | `/api/auth/password` não troca senha — era um segundo endpoint de login | ✅ Consolidado |
+| 10 | Info | Hook `login()` morto (enviava `{userId}` para uma rota que lê `{email}`) | ✅ Removido |
 
 ---
 
@@ -176,13 +176,34 @@ tentativa  8 -> HTTP:429  Muitas tentativas. Aguarde alguns minutos e tente nova
 
 ---
 
-## Achados abertos (não corrigidos neste PR)
+## Achados 8, 9 e 10 (corrigidos)
 
-**8 — `cleanupTestData()` apaga usuários reais (baixa).** `src/lib/server.ts:~104` remove qualquer usuário não-admin cujo nome comece com `teste` (`ilike(users.name, "teste%")`), e roda em **todo** `seedWorkspace()`. Um membro real chamado "Teste…" seria apagado no próximo cold start. Correção sugerida: marcar usuários de teste com uma coluna/flag em vez de casar por prefixo de nome.
+**8 — `cleanupTestData()` apagava usuários reais (baixa).** Removia qualquer usuário não-admin cujo **nome** começasse com `teste` (`ilike(users.name, "teste%")`), e rodava em **todo** `seedWorkspace()`. Um membro real chamado "Teste…" era apagado no próximo cold start.
 
-**9 — `/api/auth/password` não troca senha (info).** Apesar do nome, só autentica — é o endpoint usado por `loginEmail()` (`src/hooks/use-workspace.ts:61`). Quem troca credenciais é `/api/auth/credentials` (usado por `saveCredentials()`, `:65`). Não é falha de segurança, mas o nome induz erro; vale renomear para `/api/auth/login-email`.
+Passou a exigir **os dois** marcadores de teste — nome começando com `teste` **e** email no formato `test.user.<timestamp>@…`, que é exatamente o que `scripts/verify-workspace.mjs` cria.
 
-**10 — `/api/auth/login` é rota órfã (info).** Lê `{ email, password }`, mas seu único chamador, `login()` em `src/hooks/use-workspace.ts:56`, envia `{ userId }` → sempre HTTP 400. Código morto. A tela de login usa `loginEmail()`. Remover rota e hook evita confusão futura.
+Verificado com os dois predicados lado a lado, no mesmo banco:
+
+```
+predicado ANTIGO (só nome)  -> apagaria: Teste Membro 999 <teste.pessoa@empresa.com>
+predicado NOVO (nome+email) -> apagaria: (ninguém)
+```
+
+E após um cold start real, com os três tipos de usuário criados:
+
+| Usuário | Esperado | Resultado |
+|---|---|---|
+| Pessoa real "Teste Membro 999", email `teste.pessoa@empresa.com` | sobreviver | sobreviveu ✅ |
+| Usuário de teste, nome **e** email de teste | ser removido | removido ✅ |
+| Usuário comum (controle) | sobreviver | sobreviveu ✅ |
+
+**9 — `/api/auth/password` não troca senha (info).** Apesar do nome, só autenticava; quem troca credenciais é `/api/auth/credentials`. Havia dois endpoints de login fazendo a mesma coisa: esse (`loginEmail()`) e `/api/auth/login` (usado por `scripts/verify-workspace.mjs`).
+
+Consolidado: a lógica foi para `loginByEmail()` em `src/lib/auth-login.ts`, com `/api/auth/login` como canônica. `/api/auth/password` virou um **alias deprecado** de 2 linhas — mantido de propósito para não derrubar abas abertas com um bundle antigo do front-end, já que o app está em produção. Está marcado no código para remoção depois de um ciclo de deploy. As duas rotas compartilham o mesmo escopo de limitador, então contam juntas (verificado: 9 erros em `/api/auth/login` bloqueiam a 10ª tentativa via `/api/auth/password`).
+
+**10 — Hook `login()` morto (info).** `src/hooks/use-workspace.ts:52` enviava `{ userId }` para `/api/auth/login`, que lê `{ email, password }` → sempre HTTP 400. Era desestruturado em `workspace-app.tsx:32` mas **nunca chamado** (o `AuthGate` só recebe `onLoginEmail`). Hook e desestruturação removidos.
+
+> Correção ao texto original desta auditoria: a rota `/api/auth/login` **não** era órfã — é usada por `scripts/verify-workspace.mjs:124` e `:153`. Só o hook estava morto. A rota foi mantida e promovida a canônica.
 
 ---
 
@@ -197,10 +218,22 @@ A verificação ficou restrita a `localhost`. Não foram exercitados: login em d
 ## Verificação executada
 
 ```
-npx next typegen                 → ok
 npm exec tsc -- --noEmit         → 0 erros
 npm run lint                     → 0 erros (4 avisos preexistentes de <img>)
-npm run build                    → ok (22 rotas)
+npm run build                    → ok
 ```
+
+Comportamento conferido em execução, além dos casos já citados:
+
+| Verificação | Resultado |
+|---|---|
+| `/api/auth/login` (canônica) com email correto | `200` |
+| `/api/auth/password` (alias) com email correto | `200` |
+| Curinga `%@hotmail.com` nas duas rotas | `401` |
+| Escopo único do limitador (erros numa rota bloqueiam a outra) | `429` na 10ª tentativa |
+| Pessoa real chamada "Teste…" preservada após cold start | sobreviveu |
+| Usuário de teste dos scripts removido após cold start | removido |
+
+Um detalhe do ambiente que engana na hora de testar: **`/api/health` não dispara o `seedWorkspace()`** — ele só executa `select 1` (`src/app/api/health/route.ts`). Para forçar o seed e as rotinas de limpeza, chame um endpoint que as invoque (ex.: `/api/auth/login`).
 
 Ambiente de teste: PostgreSQL 18.3 real (PGlite sobre o protocolo de wire na porta 5432), aplicação Next.js 16.2.6 (`next dev`) com `DATABASE_URL` apontando para ele. Nenhuma credencial de produção foi usada.
