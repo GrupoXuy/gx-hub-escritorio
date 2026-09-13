@@ -24,6 +24,12 @@ export default function ClientMeetingPage({ token }: Props) {
   const leaving = useRef(false);
   const notify = (message: string) => setError(message);
   const call = useCall(submitted || { id: "guest", name: "Visitante", role: "Cliente", company: "Visitante", avatar: "", color: "#c7a66e", roomId: "recepcao", status: "available", x: 61, y: 47, isDemo: false, isAdmin: false, canAccessGroupSystem: false, gender: "male", handRaised: false, callRoom: null, micEnabled: false, cameraEnabled: false }, () => {}, () => {});
+  // Minimizar a chamada vira uma chamada de voz: o vídeo desliga, mas o
+  // microfone não é tocado e a conexão continua de pé.
+  const minimizeCall = () => {
+    if (call.cameraOn) void call.toggleCamera();
+    setCallOpen(false);
+  };
 
   useEffect(() => {
     void api<Info>(`/api/client-invites?token=${encodeURIComponent(token)}`).then(setInfo).catch(err => setError(err instanceof Error ? err.message : "Este convite não está disponível.")).finally(() => setLoading(false));

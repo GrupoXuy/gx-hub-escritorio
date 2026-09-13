@@ -200,6 +200,14 @@ export default function WorkspaceApp() {
   }, [setData, patch]);
   const visit = useCallback((id: string) => { if (id === "diretoria" && !data.me.isAdmin) { notify("A Sala da diretoria é exclusiva para administradores."); return; } setActiveRoom(id); setDialog(null); if (id === "diretoria") { navigate("director"); return; } if (view !== "office") navigate("office"); if (id !== "all") { const position = ROOM_POSITIONS[id]; patch({ roomId: id, ...position }); } }, [data.me.isAdmin, view, navigate, patch, notify]);
   const openJoin = (room: Room) => { if (call.roomId === room.id) { setDialog(null); setCallOpen(true); } else setDialog({ type: "join", room }); };
+  // Minimizar a chamada vira uma chamada de voz: o vídeo desliga, mas o
+  // microfone não é tocado e a conexão continua de pé. Se a pessoa estava
+  // noutra tela do workspace, volta para o mapa do escritório.
+  const minimizeCall = () => {
+    if (call.cameraOn) void call.toggleCamera();
+    setCallOpen(false);
+    if (view !== "office") navigate("office");
+  };
   const showMember = (member: Member) => setDialog({ type: "member", member });
   const showMeeting = (meeting: Meeting) => { setNotificationsOpen(false); setDialog({ type: "meeting", meeting }); };
   const onMessage = (message: Message) => setData(previous => ({ ...previous, messages: [...previous.messages.filter(m => m.id !== message.id), message].slice(-100) }));
@@ -296,7 +304,7 @@ export default function WorkspaceApp() {
     {dialog?.type === "search" && <SearchDialog data={data} onMember={showMember} onRoom={visit} onMeeting={showMeeting} onClose={close} />}
     {dialog?.type === "company" && <CompanyDialog name={dialog.name} onClose={close} />}
     {dialog?.type === "join" && <PrejoinDialog room={dialog.room} me={data.me} call={call} devices={preferences} onClose={close} onJoined={() => { setActiveRoom(dialog.room.id); patch({ roomId: dialog.room.id, ...ROOM_POSITIONS[dialog.room.id] }); close(); setCallOpen(true); }} />}
-    {callOpen && activeCallRoom && !dialog && <ActiveCallDialog room={activeCallRoom} me={data.me} call={call} onMinimize={() => setCallOpen(false)} onInvite={() => { setCallOpen(false); setDialog({ type: "invite" }); }} volume={preferences.volume} />}
+    {callOpen && activeCallRoom && !dialog && <ActiveCallDialog room={activeCallRoom} me={data.me} call={call} onMinimize={minimizeCall} onInvite={() => { setCallOpen(false); setDialog({ type: "invite" }); }} volume={preferences.volume} />}
     {activeCallRoom && !callOpen && <div className="floating-call"><button onClick={() => setCallOpen(true)}><span className="call-wave"><i /><i /><i /><i /></span><span><strong>{activeCallRoom.name}</strong><small>Em chamada · {Math.max(1, call.participants.length)} {call.participants.length > 1 ? "pessoas" : "pessoa"}</small></span><Maximize2 size={15} /></button><IconButton label="Encerrar chamada" className="danger-soft" onClick={() => void call.leave()}><PhoneOff size={17} /></IconButton></div>}
     {toast && <div className="toast" key={toast.key} role="status"><span><Info size={18} /></span><p>{toast.message}</p><button aria-label="Fechar aviso" onClick={() => setToast(null)}><X size={16} /></button></div>}
   </div>;
