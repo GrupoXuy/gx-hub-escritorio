@@ -4,13 +4,13 @@ import { Calibrador } from "@/components/calibrador";
 /**
  * Ferramenta de calibração das mobílias.
  *
- * Disponível em desenvolvimento. Em produção fica desligada por padrão e
- * precisa ser habilitada de propósito com `GX_CALIBRATOR=1` — a página não
- * lê nem escreve nada no banco (só posiciona pontos sobre a ilustração), mas
- * não faz sentido deixá-la aberta no app de produção sem querer.
+ * Ligada por padrão — inclusive em produção — porque o preview do sandbox é
+ * efêmero e derrubar o acesso a esta página travava a calibração. A página
+ * não lê nem escreve nada no banco: só posiciona pontos sobre a ilustração.
+ *
+ * Para desligar, defina GX_CALIBRATOR=0 no ambiente.
  */
 export default function CalibrarPage() {
-  const enabled = process.env.NODE_ENV !== "production" || process.env.GX_CALIBRATOR === "1";
-  if (!enabled) notFound();
+  if (process.env.GX_CALIBRATOR === "0") notFound();
   return <Calibrador />;
 }
