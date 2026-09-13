@@ -143,7 +143,6 @@ export const FLOOR_1_FURNITURE: FurnitureSpot[] = [
   { id: "lounge-sofa-03", label: "Sofá do Lounge — lugar 3", actionLabel: "Sentar no sofá", x: 38, y: 60.82, direction: "dr", type: "sofa", room: "lounge", floor: 1 },
   { id: "lounge-arm-01", label: "Poltrona do Lounge", actionLabel: "Sentar na poltrona", x: 43.86, y: 78.09, direction: "ur", type: "armchair", room: "lounge", floor: 1 },
   { id: "lounge-arm-02", label: "Poltrona do Café", actionLabel: "Sentar para tomar um café", x: 49.71, y: 70.57, direction: "ul", type: "armchair", room: "lounge", floor: 1 },
-  { id: "f1-novo-1", label: "Novo ponto", actionLabel: "Sentar", x: 85, y: 45.78, direction: "ul", type: "chair", room: "recepcao", floor: 1 },
 ];
 
 export const FLOOR_2_FURNITURE: FurnitureSpot[] = [
