@@ -203,6 +203,14 @@
 .director-switch-tab{color:#d8bd7e!important;border-color:#655334!important;background:#2a2318!important;margin-left:4px}
 .director-switch-tab:hover{background:#382d1c!important;color:#f0d7a0!important;border-color:#8e7445!important}
 .director-room-badge-top{display:flex;align-items:center;gap:4px;padding:3px 7px;border:1px solid #6b5a38;border-radius:4px;background:#312617;color:#dfc68b;font-size:7.5px;font-weight:700;letter-spacing:.8px}
+/* A ilustração da diretoria tem outro enquadramento: o ambiente é desenhado
+   maior, então o avatar no tamanho do escritório (48px) parecia uma miniatura.
+   Escala apenas este cenário, o que faz avatar, plaquinha de nome, sombra e
+   marcadores crescerem juntos. A origem em 50% 90% é exatamente o ponto de
+   ancoragem do translate(-50%,-90%), então os pés continuam plantados na
+   coordenada do mapa em qualquer escala. Ajuste --person-scale para calibrar. */
+.director-scene .map-person{--person-scale:1.5;transform:translate(-50%,-90%) scale(var(--person-scale));transform-origin:50% 90%}
+.director-scene .map-person.is-seated{transform:translate(-50%,-74%) scale(var(--person-scale))!important}
 
 /* ===== Interactive Furniture Hotspots & Waypoint Navigation ===== */
 .furniture-hotspot{position:absolute;z-index:95;transform:translate(-50%,-50%);width:26px;height:26px;padding:0;background:rgba(20,24,24,0.72);border:1px solid rgba(199,166,110,0.45);border-radius:50%;display:grid;place-items:center;color:#d7bd84;cursor:pointer;backdrop-filter:blur(4px);transition:transform .2s ease,border-color .2s ease,background-color .2s ease,box-shadow .2s ease}

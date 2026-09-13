@@ -209,7 +209,7 @@ export function DirectorRoom({
       </div>
 
       <div
-        className="office-scene"
+        className="office-scene director-scene"
         tabIndex={0}
         role="application"
         aria-label="Clique no chão para andar ou nas mobílias executivas para sentar. Use setas ou W A S D."
