@@ -4,13 +4,15 @@ import { Calibrador } from "@/components/calibrador";
 /**
  * Ferramenta de calibração das mobílias.
  *
- * Ligada por padrão — inclusive em produção — porque o preview do sandbox é
- * efêmero e derrubar o acesso a esta página travava a calibração. A página
- * não lê nem escreve nada no banco: só posiciona pontos sobre a ilustração.
+ * Fechada por padrão — inclusive em produção — porque os dois andares já
+ * estão calibrados e a página não tem motivo para ficar exposta: ela não lê
+ * nem escreve nada no banco, mas mostra o layout interno por inteiro.
  *
- * Para desligar, defina GX_CALIBRATOR=0 no ambiente.
+ * Para usar (local ou produção), defina GX_CALIBRATOR=1 no ambiente. Em
+ * produção isso exige definir a variável na Vercel e fazer redeploy — mudança
+ * de env var nunca vale para o deployment que já está no ar.
  */
 export default function CalibrarPage() {
-  if (process.env.GX_CALIBRATOR === "0") notFound();
+  if (process.env.GX_CALIBRATOR !== "1") notFound();
   return <Calibrador />;
 }
