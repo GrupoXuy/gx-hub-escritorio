@@ -2,6 +2,30 @@ export type View = "office" | "rooms" | "team" | "agenda" | "director";
 export type Direction = "dr" | "dl" | "ur" | "ul";
 export type AvatarAction = "idle" | "walk" | "sit" | "wave";
 
+/**
+ * Camada de calibração fina por assento — o equivalente 2D do SeatAnchor.
+ *
+ * ATENÇÃO: este app é uma ilustração 2D, não um mundo 3D. Não existe metro,
+ * bounding box nem rotação em graus; tudo aqui é ponto percentual da
+ * ilustração, igual a `x` e `y` do assento. Os nomes seguem o vocabulário de
+ * calibração (approach/seat/stand/rotation) para facilitar o ajuste, mas a
+ * unidade é % do cenário.
+ *
+ * Todos os campos são opcionais. Sem `offsets` o assento se comporta como
+ * antes da calibração: o avatar caminha até o ponto, senta nele e, ao
+ * levantar, recua 2.5 em y.
+ */
+export type SeatOffsets = {
+  /** Ajuste fino do ponto onde o avatar efetivamente senta. */
+  seat?: { x: number; y: number };
+  /** Ponto de aproximação: o avatar caminha até aqui ANTES de sentar. */
+  approach?: { x: number; y: number };
+  /** Ponto seguro para onde o avatar vai ao levantar. */
+  stand?: { x: number; y: number };
+  /** Sobrescreve a direção do assento quando a calculada não serve. */
+  rotation?: Direction;
+};
+
 export type FurnitureSpot = {
   id: string;
   label: string;
@@ -12,7 +36,32 @@ export type FurnitureSpot = {
   type: "chair" | "desk" | "sofa" | "armchair" | "coffee";
   room: string;
   floor: 1 | 2;
+  offsets?: SeatOffsets;
 };
+
+/** Recuo padrão ao levantar, usado quando o assento não define `stand`. */
+const STAND_BACKOFF_Y = 2.5;
+
+/**
+ * Resolve os pontos de um assento aplicando os offsets de calibração.
+ * Ajustar um assento aqui não altera nenhum outro.
+ */
+export function seatAnchor(spot: FurnitureSpot) {
+  const seatX = spot.x + (spot.offsets?.seat?.x ?? 0);
+  const seatY = spot.y + (spot.offsets?.seat?.y ?? 0);
+  return {
+    seat: { x: seatX, y: seatY },
+    approach: {
+      x: seatX + (spot.offsets?.approach?.x ?? 0),
+      y: seatY + (spot.offsets?.approach?.y ?? 0),
+    },
+    stand: {
+      x: seatX + (spot.offsets?.stand?.x ?? 0),
+      y: Math.min(85, seatY + (spot.offsets?.stand?.y ?? STAND_BACKOFF_Y)),
+    },
+    rotation: spot.offsets?.rotation ?? spot.direction,
+  };
+}
 
 export type Member = {
   id: string; name: string; role: string; company: string; avatar: string; color: string; avatarLook?: string | null;
@@ -64,24 +113,42 @@ export const ROOM_POSITIONS: Record<string, { x: number; y: number }> = {
   recepcao: { x: 61, y: 73 }, coworking: { x: 61, y: 47 }, estrategia: { x: 42, y: 48 }, lounge: { x: 36, y: 68 }, diretoria: { x: 48, y: 39 },
 };
 
+/**
+ * Assentos do andar 01, calibrados a partir de landmarks em pixels medidos
+ * sobre a ilustração (referência 1366x768, convertida para % da cena).
+ *
+ * Sobre as direções: cada assento aponta para o centro funcional do seu
+ * móvel. Os alvos usados foram os centroides de cada conjunto (estratégia e
+ * coworking) e, no lounge, o centroide dos assentos existentes como
+ * aproximação da mesa de centro. São inferências geométricas — conferir na
+ * tela com /calibrar e, se algum ficar errado, corrigir com
+ * `offsets.rotation` naquele assento só.
+ */
 export const FLOOR_1_FURNITURE: FurnitureSpot[] = [
-  // Sala de Estratégia (Mesa de Reunião com Cadeiras)
-  { id: "f1-meet-1", label: "Cadeira Estratégia 1", actionLabel: "Sentar na mesa de reunião", x: 33, y: 30.5, direction: "dr", type: "chair", room: "estrategia", floor: 1 },
-  { id: "f1-meet-2", label: "Cadeira Estratégia 2", actionLabel: "Sentar na mesa de reunião", x: 42.5, y: 40.5, direction: "dl", type: "chair", room: "estrategia", floor: 1 },
-  { id: "f1-meet-3", label: "Cadeira Estratégia 3", actionLabel: "Sentar na mesa de reunião", x: 33.5, y: 51.5, direction: "ur", type: "chair", room: "estrategia", floor: 1 },
-  { id: "f1-meet-4", label: "Cadeira Estratégia 4", actionLabel: "Sentar na mesa de reunião", x: 24, y: 42.5, direction: "dr", type: "chair", room: "estrategia", floor: 1 },
-  // Coworking (Mesas com Computadores)
-  { id: "f1-desk-1", label: "Estação Coworking 1", actionLabel: "Sentar e trabalhar no PC", x: 67.5, y: 29.5, direction: "ul", type: "desk", room: "coworking", floor: 1 },
-  { id: "f1-desk-2", label: "Estação Coworking 2", actionLabel: "Sentar e trabalhar no PC", x: 63, y: 32, direction: "ul", type: "desk", room: "coworking", floor: 1 },
-  { id: "f1-desk-3", label: "Estação Coworking 3", actionLabel: "Sentar e trabalhar no PC", x: 69.5, y: 50.5, direction: "ur", type: "desk", room: "coworking", floor: 1 },
-  { id: "f1-desk-4", label: "Estação Coworking 4", actionLabel: "Sentar e trabalhar no PC", x: 73.5, y: 50.5, direction: "ur", type: "desk", room: "coworking", floor: 1 },
-  // Lounge & Café
-  { id: "f1-sofa-1", label: "Sofá do Lounge", actionLabel: "Sentar no sofá", x: 22, y: 56.5, direction: "dr", type: "sofa", room: "lounge", floor: 1 },
-  { id: "f1-arm-1", label: "Poltrona do Lounge", actionLabel: "Sentar na poltrona", x: 32.5, y: 63, direction: "dr", type: "armchair", room: "lounge", floor: 1 },
-  { id: "f1-arm-2", label: "Poltrona do Café", actionLabel: "Sentar para tomar um café", x: 44, y: 64, direction: "dl", type: "armchair", room: "lounge", floor: 1 },
-  // Recepção
-  { id: "f1-rec-1", label: "Poltrona da Recepção", actionLabel: "Sentar na recepção", x: 62, y: 72.5, direction: "dr", type: "armchair", room: "recepcao", floor: 1 },
-  { id: "f1-rec-2", label: "Balcão de Atendimento", actionLabel: "Atendimento da recepção", x: 72.5, y: 55.5, direction: "dl", type: "desk", room: "recepcao", floor: 1 },
+  // Sala de Estratégia — 7 cadeiras ao redor da mesa (landmarks STR-01..07)
+  { id: "str-01", label: "Cadeira Estratégia 01", actionLabel: "Sentar na mesa de estratégia", x: 27.45, y: 41.67, direction: "dr", type: "chair", room: "estrategia", floor: 1 },
+  { id: "str-02", label: "Cadeira Estratégia 02", actionLabel: "Sentar na mesa de estratégia", x: 30.6, y: 39.06, direction: "dr", type: "chair", room: "estrategia", floor: 1 },
+  { id: "str-03", label: "Cadeira Estratégia 03", actionLabel: "Sentar na mesa de estratégia", x: 33.53, y: 36.85, direction: "dl", type: "chair", room: "estrategia", floor: 1 },
+  { id: "str-04", label: "Cadeira Estratégia 04", actionLabel: "Sentar na mesa de estratégia", x: 39.17, y: 37.11, direction: "dl", type: "chair", room: "estrategia", floor: 1 },
+  { id: "str-05", label: "Cadeira Estratégia 05", actionLabel: "Sentar na mesa de estratégia", x: 27.31, y: 48.18, direction: "ur", type: "chair", room: "estrategia", floor: 1 },
+  { id: "str-06", label: "Cadeira Estratégia 06", actionLabel: "Sentar na mesa de estratégia", x: 33.31, y: 48.18, direction: "ul", type: "chair", room: "estrategia", floor: 1 },
+  { id: "str-07", label: "Cadeira Estratégia 07", actionLabel: "Sentar na mesa de estratégia", x: 38.43, y: 45.96, direction: "ul", type: "chair", room: "estrategia", floor: 1 },
+  // Coworking — 6 postos (landmarks COW-01..06; 01-03 fileira posterior, 04-06 dianteira)
+  { id: "cow-01", label: "Estação Coworking 01", actionLabel: "Sentar e trabalhar na estação", x: 58.57, y: 40.63, direction: "dr", type: "desk", room: "coworking", floor: 1 },
+  { id: "cow-02", label: "Estação Coworking 02", actionLabel: "Sentar e trabalhar na estação", x: 63.84, y: 36.98, direction: "dr", type: "desk", room: "coworking", floor: 1 },
+  { id: "cow-03", label: "Estação Coworking 03", actionLabel: "Sentar e trabalhar na estação", x: 68.81, y: 41.67, direction: "dl", type: "desk", room: "coworking", floor: 1 },
+  { id: "cow-04", label: "Estação Coworking 04", actionLabel: "Sentar e trabalhar na estação", x: 64.42, y: 45.83, direction: "ur", type: "desk", room: "coworking", floor: 1 },
+  { id: "cow-05", label: "Estação Coworking 05", actionLabel: "Sentar e trabalhar na estação", x: 71.74, y: 54.69, direction: "ul", type: "desk", room: "coworking", floor: 1 },
+  { id: "cow-06", label: "Estação Coworking 06", actionLabel: "Sentar e trabalhar na estação", x: 77.6, y: 47.92, direction: "ul", type: "desk", room: "coworking", floor: 1 },
+  // Lounge & Café — ESTIMADO: o documento de calibração não trouxe
+  // coordenadas para o lounge. Os 3 lugares do sofá foram distribuídos ao
+  // longo de um eixo isométrico a partir do sofá existente e as 2 poltronas
+  // mantidas nos pontos atuais. Conferir e corrigir em /calibrar.
+  { id: "lounge-sofa-01", label: "Sofá do Lounge — lugar 1", actionLabel: "Sentar no sofá", x: 19.05, y: 53.88, direction: "dr", type: "sofa", room: "lounge", floor: 1 },
+  { id: "lounge-sofa-02", label: "Sofá do Lounge — lugar 2", actionLabel: "Sentar no sofá", x: 22, y: 56.5, direction: "dr", type: "sofa", room: "lounge", floor: 1 },
+  { id: "lounge-sofa-03", label: "Sofá do Lounge — lugar 3", actionLabel: "Sentar no sofá", x: 24.95, y: 59.12, direction: "dr", type: "sofa", room: "lounge", floor: 1 },
+  { id: "lounge-arm-01", label: "Poltrona do Lounge", actionLabel: "Sentar na poltrona", x: 32.5, y: 63, direction: "ur", type: "armchair", room: "lounge", floor: 1 },
+  { id: "lounge-arm-02", label: "Poltrona do Café", actionLabel: "Sentar para tomar um café", x: 44, y: 64, direction: "ul", type: "armchair", room: "lounge", floor: 1 },
 ];
 
 export const FLOOR_2_FURNITURE: FurnitureSpot[] = [

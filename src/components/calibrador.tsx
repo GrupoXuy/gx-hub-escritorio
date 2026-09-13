@@ -89,6 +89,17 @@ export function Calibrador() {
   const patch = (id: string, changes: Partial<FurnitureSpot>) =>
     setSpots((current) => current.map((spot) => (spot.id === id ? { ...spot, ...changes } : spot)));
 
+  const offsetOf = (spot: FurnitureSpot, kind: "seat" | "approach" | "stand") =>
+    spot.offsets?.[kind] ?? { x: 0, y: 0 };
+
+  // Ajuste fino independente: mexe só no assento selecionado.
+  const setOffset = (id: string, kind: "seat" | "approach" | "stand", axis: "x" | "y", value: number) => {
+    const spot = spots.find((item) => item.id === id);
+    if (!spot) return;
+    const current = offsetOf(spot, kind);
+    patch(id, { offsets: { ...spot.offsets, [kind]: { ...current, [axis]: value } } });
+  };
+
   const nudge = (event: React.KeyboardEvent, id: string) => {
     const step = event.shiftKey ? 1 : 0.1;
     const delta: Record<string, [number, number]> = {
@@ -107,14 +118,14 @@ export function Calibrador() {
 
   const code = useMemo(() => {
     const name = floor === 1 ? "FLOOR_1_FURNITURE" : "FLOOR_2_FURNITURE";
-    const rows = spots.map(
-      (spot) =>
-        `  { id: ${JSON.stringify(spot.id)}, label: ${JSON.stringify(spot.label)}, actionLabel: ${JSON.stringify(
-          spot.actionLabel
-        )}, x: ${spot.x}, y: ${spot.y}, direction: ${JSON.stringify(spot.direction)}, type: ${JSON.stringify(
-          spot.type
-        )}, room: ${JSON.stringify(spot.room)}, floor: ${floor} },`
-    );
+    const rows = spots.map((spot) => {
+      const offsets = spot.offsets && Object.keys(spot.offsets).length ? `, offsets: ${JSON.stringify(spot.offsets)}` : "";
+      return `  { id: ${JSON.stringify(spot.id)}, label: ${JSON.stringify(spot.label)}, actionLabel: ${JSON.stringify(
+        spot.actionLabel
+      )}, x: ${spot.x}, y: ${spot.y}, direction: ${JSON.stringify(spot.direction)}, type: ${JSON.stringify(
+        spot.type
+      )}, room: ${JSON.stringify(spot.room)}, floor: ${floor}${offsets} },`;
+    });
     return `export const ${name}: FurnitureSpot[] = [\n${rows.join("\n")}\n];`;
   }, [spots, floor]);
 
@@ -213,6 +224,32 @@ export function Calibrador() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="office-illustration" src={image} alt="" draggable={false} />
+
+              {/* Marcador do ponto de aproximação, só quando calibrado. */}
+              {spots.map((spot) => {
+                const approach = spot.offsets?.approach;
+                if (!approach || (!approach.x && !approach.y)) return null;
+                const seat = offsetOf(spot, "seat");
+                return (
+                  <span
+                    key={`approach-${spot.id}`}
+                    title={`approach de ${spot.label}`}
+                    style={{
+                      position: "absolute",
+                      left: `${spot.x + seat.x + approach.x}%`,
+                      top: `${spot.y + seat.y + approach.y}%`,
+                      width: 9,
+                      height: 9,
+                      marginLeft: -4.5,
+                      marginTop: -4.5,
+                      borderRadius: "50%",
+                      border: "1px dashed #7fc4ff",
+                      pointerEvents: "none",
+                      zIndex: 200,
+                    }}
+                  />
+                );
+              })}
 
               {spots.map((spot) => {
                 const isSelected = spot.id === selected;
@@ -371,6 +408,60 @@ export function Calibrador() {
                   <span style={{ ...field, flex: 1 }}>x {current.x}</span>
                   <span style={{ ...field, flex: 1 }}>y {current.y}</span>
                 </div>
+
+                <div>
+                  <span style={label}>Calibração fina — deslocamentos em pontos %</span>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    {(["seat", "approach", "stand"] as const).map((kind) => (
+                      <div key={kind} style={{ display: "grid", gridTemplateColumns: "74px 1fr 1fr", gap: 6, alignItems: "center" }}>
+                        <span style={{ fontSize: 10.5, color: kind === "seat" ? "#e3b23c" : kind === "approach" ? "#7fc4ff" : "#a8d5a2" }}>
+                          {kind}
+                        </span>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="x"
+                          style={field}
+                          value={offsetOf(current, kind).x}
+                          onChange={(event) => setOffset(current.id, kind, "x", Number(event.target.value))}
+                        />
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="y"
+                          style={field}
+                          value={offsetOf(current, kind).y}
+                          onChange={(event) => setOffset(current.id, kind, "y", Number(event.target.value))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <span style={{ display: "block", marginTop: 5, fontSize: 9.5, color: "#7f8587", lineHeight: 1.6 }}>
+                    seat = onde senta · approach = onde para antes de sentar · stand = onde fica ao levantar
+                  </span>
+                </div>
+
+                <label>
+                  <span style={label}>Sobrescrever direção</span>
+                  <select
+                    style={field}
+                    value={current.offsets?.rotation ?? ""}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      const next = { ...current.offsets };
+                      if (value) next.rotation = value as Direction;
+                      else delete next.rotation;
+                      patch(current.id, { offsets: Object.keys(next).length ? next : undefined });
+                    }}
+                  >
+                    <option value="">automática (usa o campo direção acima)</option>
+                    {DIRS.map((dir) => (
+                      <option key={dir.value} value={dir.value}>
+                        {dir.value} — {dir.hint}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   style={{ ...smallButton, borderColor: "#6b3a3a", color: "#e8b4b4" }}
                   onClick={() => {
