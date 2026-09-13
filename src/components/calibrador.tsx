@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PixelAvatar } from "@/components/ui";
 import { FLOOR_1_FURNITURE, FLOOR_2_FURNITURE, type FurnitureSpot, type Direction } from "@/lib/workspace";
 import { presetLook, serializeLook } from "@/lib/avatar";
@@ -49,6 +49,9 @@ export function Calibrador() {
     setEdits((current) => ({ ...current, [floor]: updater(current[floor]) }));
   const [selected, setSelected] = useState<string | null>(null);
   const [showAvatars, setShowAvatars] = useState(true);
+  // Desligado por padrao: um clique distraido na cena nao deve criar
+  // mobilia fantasma no meio do escritorio.
+  const [addMode, setAddMode] = useState(false);
   const worldRef = useRef<HTMLDivElement | null>(null);
   const dragging = useRef<string | null>(null);
   // Contador em ref em vez de Date.now(): ids de pontos novos precisam ser
@@ -65,6 +68,7 @@ export function Calibrador() {
   };
 
   const addSpot = (event: React.MouseEvent) => {
+    if (!addMode) return;
     if ((event.target as HTMLElement).closest("[data-marker]")) return;
     const { x, y } = positionFrom(event.clientX, event.clientY);
     sequence.current += 1;
@@ -88,6 +92,16 @@ export function Calibrador() {
 
   const patch = (id: string, changes: Partial<FurnitureSpot>) =>
     setSpots((current) => current.map((spot) => (spot.id === id ? { ...spot, ...changes } : spot)));
+
+  // Esc tira do modo de adicao, para nao ficar preso nele sem ver o botao.
+  useEffect(() => {
+    if (!addMode) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAddMode(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [addMode]);
 
   const offsetOf = (spot: FurnitureSpot, kind: "seat" | "approach" | "stand") =>
     spot.offsets?.[kind] ?? { x: 0, y: 0 };
@@ -205,6 +219,9 @@ export function Calibrador() {
               {showAvatars ? "Avatares visíveis" : "Avatares ocultos"}
             </button>
             <span className="office-tabs-spacer" />
+            <button className={addMode ? "active" : ""} onClick={() => setAddMode((value) => !value)}>
+              {addMode ? "Adicionando ponto (Esc sai)" : "Adicionar ponto"}
+            </button>
             <button
               onClick={() => {
                 setSpots(() => clone(floor));
@@ -220,7 +237,7 @@ export function Calibrador() {
               className="office-world"
               ref={worldRef}
               onClick={addSpot}
-              style={{ transform: "translate(-50%, -50%)" }}
+              style={{ transform: "translate(-50%, -50%)", cursor: addMode ? "crosshair" : "default" }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="office-illustration" src={image} alt="" draggable={false} />
