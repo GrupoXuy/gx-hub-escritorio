@@ -50,9 +50,11 @@ export async function GET(request: Request) {
     const after = Math.max(0, Number(url.searchParams.get("after")) || 0);
     if (!roomId || me.callRoom !== roomId) return Response.json({ error: "Você não está nesta chamada." }, { status: 403 });
     await db.update(users).set({ lastSeen: new Date() }).where(eq(users.id, me.id));
+    const staleBefore = new Date(Date.now() - 60000);
     const [participants, incoming] = await Promise.all([
       db.select().from(users).where(and(eq(users.callRoom, roomId), eq(users.isDemo, false), or(eq(users.isGuest, false), sql`${users.guestExpiresAt} > now()`), gt(users.lastSeen, new Date(Date.now() - 25000)))),
       db.select().from(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), gt(signals.id, after))).orderBy(asc(signals.id)).limit(100),
+      db.delete(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), lt(signals.createdAt, staleBefore))),
     ]);
     return Response.json({ participants, signals: incoming }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return fail(error); }
