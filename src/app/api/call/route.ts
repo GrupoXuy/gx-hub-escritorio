@@ -15,7 +15,13 @@ export async function POST(request: Request) {
     if (!me) return Response.json({ error: "Entre no escritório para iniciar uma chamada." }, { status: 401 });
     const body = await request.json();
     if (body.action === "leave") {
-      await db.update(users).set({ callRoom: null, micEnabled: false, cameraEnabled: false, lastSeen: new Date(), ...(me.isGuest ? { guestExpiresAt: new Date() } : {}) }).where(eq(users.id, me.id));
+      // Sair da chamada NÃO encerra a sessão de convidado. Antes, este caminho
+      // zerava guestExpiresAt, e como getCallMember()/getGuest() exigem
+      // guestExpiresAt > now(), o convidado que minimizava e saía da chamada
+      // ficava com o escritório travado em "Abrindo o escritório…" e sem poder
+      // voltar à chamada (401) — e o cleanupExpiredGuests() apagava a linha dele.
+      // Quem encerra a visita é /api/client-invites/leave, que limpa o cookie.
+      await db.update(users).set({ callRoom: null, micEnabled: false, cameraEnabled: false, lastSeen: new Date() }).where(eq(users.id, me.id));
       await db.delete(signals).where(or(eq(signals.fromId, me.id), eq(signals.toId, me.id)));
       return Response.json({ ok: true });
     }

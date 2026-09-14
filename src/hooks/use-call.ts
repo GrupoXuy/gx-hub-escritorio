@@ -129,7 +129,14 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
   }, [clearMedia, notify, onChange]);
 
   useEffect(() => {
-    const unload = () => {
+    // pagehide também dispara quando a página entra no bfcache — trocar de app
+    // ou de aba no celular — e nesse caso ela volta intacta, com as
+    // RTCPeerConnections vivas. Derrubar a mídia aí encerrava a chamada sem a
+    // pessoa pedir. Só avisamos o servidor quando a página está sendo destruída
+    // de fato (persisted === false); se ela for descartada do bfcache sem novo
+    // evento, o batimento de lastSeen (25s) já remove a pessoa da sala.
+    const unload = (event: PageTransitionEvent) => {
+      if (event.persisted) return;
       if (activeRoom.current) navigator.sendBeacon("/api/call", new Blob([JSON.stringify({ action: "leave" })], { type: "application/json" }));
       clearMedia();
     };
