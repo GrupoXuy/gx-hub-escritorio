@@ -42,7 +42,12 @@ export default function ClientMeetingPage({ token }: Props) {
   }, [token]);
 
   useEffect(() => {
-    const leave = () => {
+    const leave = (event: PageTransitionEvent) => {
+      // Mesmo motivo do hook de chamada: pagehide com persisted === true é o
+      // bfcache (celular mandando a aba para segundo plano). Beaconar aí
+      // marcava clientInvites.usedAt e expirava a sessão do convidado — ao
+      // voltar, ele dava de cara com "convite já utilizado" e perdia a reunião.
+      if (event.persisted) return;
       if (leaving.current) return;
       leaving.current = true;
       navigator.sendBeacon("/api/client-invites/leave", new Blob([JSON.stringify({ token })], { type: "application/json" }));
