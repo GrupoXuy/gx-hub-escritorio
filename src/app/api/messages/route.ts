@@ -1,7 +1,8 @@
 import { db } from "@/db";
 import { messages } from "@/db/schema";
-import { getMember, isHenriqueAdmin, fail } from "@/lib/server";
+import { getMember, isHenriqueAdmin, fail, publicMember } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
+
 export async function DELETE() {
   try {
     const me = await getMember();
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     if (!content || content.length > 2000) return Response.json({ error: "Escreva uma mensagem de até 2.000 caracteres." }, { status: 400 });
     if (roomId !== "geral" && !ROOM_DATA.some(r => r.id === roomId)) return Response.json({ error: "Conversa não encontrada." }, { status: 400 });
     const [message] = await db.insert(messages).values({ senderId: me.id, content, roomId }).returning();
-    return Response.json({ ...message, sender: me }, { status: 201 });
+    // Nunca devolva credenciais/dados privados do usuário junto da mensagem.
+    return Response.json({ ...message, sender: publicMember(me) }, { status: 201 });
   } catch (error) { return fail(error); }
 }
