@@ -2,7 +2,6 @@
 import { useId, useEffect, useRef, type ReactNode, type ButtonHTMLAttributes } from "react";
 import { Armchair, Monitor, Presentation, Coffee, ShieldCheck, X } from "lucide-react";
 import { initials, type Direction, type AvatarAction } from "@/lib/workspace";
-import { parseLook } from "@/lib/avatar";
 import { Avatar3D } from "@/components/avatar-3d";
 
 export function BrandMark({ size = 44 }: { size?: number }) {
