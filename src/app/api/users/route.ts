@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { users, messages, meetings, invitations, signals } from "@/db/schema";
-import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
+import { users, messages, meetings, invitations, clientInvites, leads, signals } from "@/db/schema";
+import { and, asc, eq, or, sql } from "drizzle-orm";
 import { fail, getMember, hashPassword, isHenriqueAdmin, validColor, validEmail, validPassword, validProfileText } from "@/lib/server";
 import { serializeLook, defaultLookFor } from "@/lib/avatar";
 export const dynamic = "force-dynamic";
@@ -105,6 +105,23 @@ export async function DELETE(request: Request) {
     if (!target) return Response.json({ error: "Usuário não encontrado." }, { status: 404 });
     if (target.id === me.id) return Response.json({ error: "Você não pode remover seu próprio usuário." }, { status: 400 });
     await db.transaction(async tx => {
+      // Remove dependent CRM records before meetings/invites so hard-delete
+      // cannot fail on foreign-key constraints or leave orphaned history.
+      await tx.execute(sql`
+        DELETE FROM gx_leads
+        WHERE client_invite_id IN (
+          SELECT id FROM gx_client_invites
+          WHERE created_by = ${id}
+             OR meeting_id IN (SELECT id FROM gx_meetings WHERE organizer_id = ${id})
+        )
+        OR meeting_id IN (SELECT id FROM gx_meetings WHERE organizer_id = ${id})
+      `);
+      await tx.delete(clientInvites).where(
+        or(
+          eq(clientInvites.createdBy, id),
+          sql`${clientInvites.meetingId} IN (SELECT id FROM gx_meetings WHERE organizer_id = ${id})`
+        )
+      );
       await tx.delete(signals).where(or(eq(signals.fromId, id), eq(signals.toId, id)));
       await tx.delete(invitations).where(eq(invitations.createdBy, id));
       await tx.delete(messages).where(eq(messages.senderId, id));
