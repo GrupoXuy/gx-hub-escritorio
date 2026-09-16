@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { clientInvites, leads, meetings, rooms, users } from "@/db/schema";
-import { and, eq, gt, isNull } from "drizzle-orm";
-import { fail, publicMember, randomToken, seedWorkspace, setGuestSession, validEmail, validProfileText } from "@/lib/server";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { fail, publicMember, seedWorkspace, setGuestSession, validEmail, validProfileText } from "@/lib/server";
 import { serializeLook, defaultLookFor, lookFromId } from "@/lib/avatar";
 
 export async function POST(request: Request) {
