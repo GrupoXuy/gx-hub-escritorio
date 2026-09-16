@@ -1,26 +1,23 @@
 import { db } from "@/db";
 import { users, signals } from "@/db/schema";
 import { and, eq, gt, asc, or, lt, sql } from "drizzle-orm";
-import { getCallMember, fail } from "@/lib/server";
+import { getCallMember, fail, publicMember } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
+
 export const dynamic = "force-dynamic";
+
 function iceServers() {
   const servers: { urls: string; username?: string; credential?: string }[] = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }];
   if (process.env.TURN_SERVER_URL) servers.push({ urls: process.env.TURN_SERVER_URL, username: process.env.TURN_USERNAME, credential: process.env.TURN_CREDENTIAL });
   return servers;
 }
+
 export async function POST(request: Request) {
   try {
     const me = await getCallMember();
     if (!me) return Response.json({ error: "Entre no escritório para iniciar uma chamada." }, { status: 401 });
     const body = await request.json();
     if (body.action === "leave") {
-      // Sair da chamada NÃO encerra a sessão de convidado. Antes, este caminho
-      // zerava guestExpiresAt, e como getCallMember()/getGuest() exigem
-      // guestExpiresAt > now(), o convidado que minimizava e saía da chamada
-      // ficava com o escritório travado em "Abrindo o escritório…" e sem poder
-      // voltar à chamada (401) — e o cleanupExpiredGuests() apagava a linha dele.
-      // Quem encerra a visita é /api/client-invites/leave, que limpa o cookie.
       await db.update(users).set({ callRoom: null, micEnabled: false, cameraEnabled: false, lastSeen: new Date() }).where(eq(users.id, me.id));
       await db.delete(signals).where(or(eq(signals.fromId, me.id), eq(signals.toId, me.id)));
       return Response.json({ ok: true });
@@ -41,6 +38,7 @@ export async function POST(request: Request) {
     return Response.json({ roomId: room.id, iceServers: iceServers() });
   } catch (error) { return fail(error); }
 }
+
 export async function GET(request: Request) {
   try {
     const me = await getCallMember();
@@ -53,9 +51,9 @@ export async function GET(request: Request) {
     const staleBefore = new Date(Date.now() - 60000);
     const [participants, incoming] = await Promise.all([
       db.select().from(users).where(and(eq(users.callRoom, roomId), eq(users.isDemo, false), or(eq(users.isGuest, false), sql`${users.guestExpiresAt} > now()`), gt(users.lastSeen, new Date(Date.now() - 25000)))),
-      db.select().from(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), gt(signals.id, after))).orderBy(asc(signals.id)).limit(100),
+      db.select().from(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), gt(signals.id, after))).orderBy(asc(signals.id)).limit(100)),
       db.delete(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), lt(signals.createdAt, staleBefore))),
     ]);
-    return Response.json({ participants, signals: incoming }, { headers: { "Cache-Control": "no-store" } });
+    return Response.json({ participants: participants.map(publicMember), signals: incoming }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return fail(error); }
 }
