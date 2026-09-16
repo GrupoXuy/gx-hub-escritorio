@@ -2,7 +2,6 @@ import { db } from "@/db";
 import { clientInvites, leads, meetings, rooms, users } from "@/db/schema";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { fail, publicMember, randomToken, seedWorkspace, setGuestSession, validEmail, validProfileText } from "@/lib/server";
-import { ROOM_DATA } from "@/lib/workspace";
 import { serializeLook, defaultLookFor, lookFromId } from "@/lib/avatar";
 
 export async function POST(request: Request) {
@@ -19,7 +18,11 @@ export async function POST(request: Request) {
     if (!gender) return Response.json({ error: "Escolha uma opção de sexo." }, { status: 400 });
     if (whatsapp.replace(/\D/g, "").length < 10) return Response.json({ error: "Informe um WhatsApp válido com DDD." }, { status: 400 });
     if (!validEmail(email)) return Response.json({ error: "Informe um email válido." }, { status: 400 });
+
     const result = await db.transaction(async tx => {
+      // Serialize claims for the same invite so two concurrent requests cannot
+      // both pass the unused check and create two guests/leads.
+      await tx.execute(sql`SELECT id FROM gx_client_invites WHERE id = ${token} AND used_at IS NULL AND expires_at > now() FOR UPDATE`);
       const [row] = await tx.select({ invite: clientInvites, meeting: meetings, room: rooms }).from(clientInvites)
         .innerJoin(meetings, eq(meetings.id, clientInvites.meetingId))
         .innerJoin(rooms, eq(rooms.id, meetings.roomId))
