@@ -1,9 +1,8 @@
 "use client";
-import { useId, useMemo, useEffect, useRef, type ReactNode, type ButtonHTMLAttributes } from "react";
+import { useId, useEffect, useRef, type ReactNode, type ButtonHTMLAttributes } from "react";
 import { Armchair, Monitor, Presentation, Coffee, ShieldCheck, X } from "lucide-react";
 import { initials, type Direction, type AvatarAction } from "@/lib/workspace";
-import { buildSprite, LAYER_NAMES, SPRITE_W, SPRITE_H, type LayerName } from "@/lib/avatar-sprite";
-import { parseLook, hashId, GOLD, GOLD_LIGHT } from "@/lib/avatar";
+import { parseLook } from "@/lib/avatar";
 import { Avatar3D } from "@/components/avatar-3d";
 
 export function BrandMark({ size = 44 }: { size?: number }) {
@@ -85,21 +84,16 @@ export type AvatarLike = {
   avatarLook?: string | null;
 };
 
-const INK = "#0b0e10";
-
 /**
- * Sprite legado do avatar. Mantido como renderer de compatibilidade e para
- * previews/scripts antigos enquanto o avatar 3D assume a interface principal.
+ * Compatibilidade de API para telas antigas.
+ * O nome PixelAvatar permanece temporariamente para evitar alterações em cadeia,
+ * mas o renderer entregue ao usuário é o Avatar3D em todo o aplicativo.
  */
 export function PixelAvatar({
   member,
   size = 48,
-  own = false,
   action,
   direction,
-  isMoving = false,
-  preview = false,
-  showRing,
 }: {
   member: AvatarLike;
   size?: number;
@@ -107,118 +101,17 @@ export function PixelAvatar({
   action?: AvatarAction;
   direction?: Direction;
   isMoving?: boolean;
-  /** Modo vitrine: sem animação, sem contorno e sem indicadores flutuantes. */
   preview?: boolean;
   showRing?: boolean;
 }) {
-  const uid = useId().replace(/:/g, "");
-  const seed = member.id || member.name || "";
-  const look = useMemo(() => parseLook(member.avatarLook, seed), [member.avatarLook, seed]);
-  const currentAction = action || member.action || "idle";
-  const currentDir = direction || member.direction || "dr";
-  const isBack = currentDir === "ul" || currentDir === "ur";
-  const isFlipped = currentDir === "dl" || currentDir === "ul";
-  const sitting = currentAction === "sit";
-  const walking = isMoving || currentAction === "walk";
-  const waving = !!member.handRaised || currentAction === "wave";
-  const speaking = !!member.micEnabled;
-  const fine = size >= 40;
-  // os olhos apontam para onde a pessoa está virada (em coordenadas locais: o espelhamento inverte o sinal)
-  const facing = currentDir === "dr" || currentDir === "ur" ? 1 : currentDir === "dl" || currentDir === "ul" ? -1 : 0;
-  const pupilShift = isFlipped ? -facing * 0.5 : facing * 0.5;
-  const sprite = useMemo(
-    () => buildSprite({ look, view: isBack ? "back" : "front", sitting, walking, waving, admin: member.isAdmin === true, fine, suit: member.color || GOLD, pupilShift }),
-    [look, isBack, sitting, walking, waving, member.isAdmin, fine, member.color, pupilShift]
-  );
-  const inkOn = !preview && size >= 26;
-  const halo = own || look.aura;
-  const seedOffset = -(hashId(seed) % 41) / 10;
-  const shadow = sprite.shadow;
-  const ratio = SPRITE_W / SPRITE_H;
-  const cls = [
-    "pixel-avatar-wrapper",
-    own ? "is-own" : "",
-    preview ? "is-preview" : "",
-    sitting ? "is-sitting" : "",
-    walking && !preview ? "is-walking" : "",
-    !walking && !sitting && !preview ? "is-idle" : "",
-    waving ? "is-waving" : "",
-    speaking ? "is-speaking" : "",
-    halo ? "has-halo" : "",
-    showRing ? "has-ring" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <span className={cls} style={{ width: size * ratio, height: size, ["--av-color" as string]: member.color || GOLD }}>
-      <svg viewBox={`0 0 ${SPRITE_W} ${SPRITE_H}`} width="100%" height="100%" shapeRendering="crispEdges" className="pixel-avatar-svg" aria-hidden="true" style={{ overflow: "visible" }}>
-        <defs>
-          <filter id={`${uid}-ink`} x="-14%" y="-10%" width="128%" height="122%" colorInterpolationFilters="sRGB">
-            <feMorphology in="SourceAlpha" operator="dilate" radius={inkOn ? 0.55 : 0} result="fat" />
-            <feFlood floodColor={INK} floodOpacity={0.9} result="ink" />
-            <feComposite in="ink" in2="fat" operator="in" result="outline" />
-            {halo ? (
-              <>
-                <feOffset in="fat" dx={-0.6} dy={-0.9} result="lift" />
-                <feComposite in="lift" in2="SourceAlpha" operator="out" result="liftRim" />
-                <feFlood floodColor={GOLD_LIGHT} floodOpacity="0.62" result="liftColor" />
-                <feComposite in="liftColor" in2="liftRim" operator="in" result="rimLight" />
-                <feMerge>
-                  <feMergeNode in="outline" />
-                  <feMergeNode in="rimLight" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </>
-            ) : (
-              <feMerge>
-                <feMergeNode in="outline" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            )}
-          </filter>
-          <filter id={`${uid}-soft`} x="-40%" y="-60%" width="180%" height="240%">
-            <feGaussianBlur stdDeviation="1.1" />
-          </filter>
-        </defs>
-
-        {/* sombra de contato suave + halo de presença */}
-        <g className="avatar-ground" filter={`url(#${uid}-soft)`}>
-          {halo && <ellipse cx={shadow.cx} cy={shadow.cy} rx={shadow.rx + 3.4} ry={shadow.ry + 1.6} fill={GOLD} opacity="0.2" className="avatar-halo" />}
-          <ellipse
-            cx={shadow.cx}
-            cy={shadow.cy}
-            rx={shadow.rx}
-            ry={shadow.ry}
-            fill={own ? "#c7a66e" : "#05070a"}
-            opacity={own ? 0.42 : 0.44}
-            className="avatar-ground-shadow"
-          />
-        </g>
-
-        <g className="avatar-figure" transform={isFlipped ? `translate(${SPRITE_W}, 0) scale(-1, 1)` : undefined} filter={inkOn ? `url(#${uid}-ink)` : undefined}>
-          {LAYER_NAMES.map(name => (
-            <g key={name} className={`av-layer av-${name}`} style={name === "eyes" ? { animationDelay: `${seedOffset}s` } : undefined}>
-              {sprite.layers[name as LayerName].map((px, index) => (
-                <rect key={index} x={px.x} y={px.y} width={px.w} height={px.h} fill={px.fill} opacity={px.o} rx={px.r} />
-              ))}
-            </g>
-          ))}
-        </g>
-      </svg>
-
-      {!preview && (
-        <>
-          {waving && <span className="wave-bubble">👋</span>}
-          {speaking && (
-            <span className="avatar-speaking-waves" title="Falando">
-              <i /><i /><i />
-            </span>
-          )}
-          {sitting && <span className="avatar-sitting-indicator" title="Sentado">🪑</span>}
-        </>
-      )}
-    </span>
-  );
+  const avatarMember = {
+    ...member,
+    action: action || member.action || "idle",
+    direction: direction || member.direction || "dr",
+  };
+  return <Avatar3D member={avatarMember} size={size} />;
 }
+
 export function RoomIcon({ kind, size = 18 }: { kind: string; size?: number }) {
   const Icon = ({ reception: Armchair, work: Monitor, meeting: Presentation, lounge: Coffee, private: ShieldCheck })[kind] || Armchair;
   return <Icon size={size} strokeWidth={1.65} />;
