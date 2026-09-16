@@ -8,16 +8,10 @@ export async function GET() {
   try {
     await db.execute(sql`select 1`);
     return Response.json({ ok: true, latencyMs: Date.now() - started });
-  } catch (error) {
-    const err = error as { code?: string; message?: string };
+  } catch {
     return Response.json(
-      {
-        ok: false,
-        dbConfigured: Boolean(process.env.DATABASE_URL),
-        code: err?.code || "unknown",
-        hint: err?.message ? String(err.message).slice(0, 160) : "sem detalhes",
-      },
-      { status: 500 }
+      { ok: false },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
     );
   }
 }
