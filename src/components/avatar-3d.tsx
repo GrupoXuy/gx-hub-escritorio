@@ -15,11 +15,10 @@ export type Avatar3DMember = {
 };
 
 /**
- * Primeira versão do renderer 3D do GX Hub.
+ * Renderer 3D visual do GX Hub.
  *
  * A arte é procedural/CSS, sem GLB externo ou dependência WebGL pesada.
- * Isso permite validar a linguagem visual no build atual antes de migrar
- * para um modelo 3D completo com rig/animações.
+ * A configuração continua vindo do mesmo AvatarLook usado pelo sistema legado.
  */
 export function Avatar3D({ member, size = 48 }: { member: Avatar3DMember; size?: number }) {
   const look = parseLook(member.avatarLook, member.id || member.name);
@@ -70,79 +69,243 @@ export function Avatar3D({ member, size = 48 }: { member: Avatar3DMember; size?:
 }
 
 /**
- * Camada global usada enquanto o Avatar3D completo ainda está em validação.
- * O PixelAvatar permanece no DOM e é revelado automaticamente se o navegador
- * não suportar transform-style: preserve-3d.
+ * Estilos globais do renderer. O PixelAvatar não é mais sobreposto ao avatar
+ * 3D; permanece disponível como renderer legado para scripts/previews.
  */
 export function Avatar3DStyles() {
   return (
     <style jsx global>{`
-      .avatar:not(.has-photo) { overflow: visible; isolation: isolate; }
-      .avatar:not(.has-photo) .avatar-plate { z-index: 8; pointer-events: none; opacity: .28; }
-      .avatar:not(.has-photo) .pixel-avatar-wrapper { position: absolute; opacity: 0; pointer-events: none; transform: scale(.01); }
-      .avatar:not(.has-photo)::before,
-      .avatar:not(.has-photo)::after { content: ""; position: absolute; display: block; pointer-events: none; z-index: 2; }
-      .avatar:not(.has-photo)::before {
-        width: 55%; height: 55%; left: 22.5%; top: 8%; border-radius: 47% 47% 43% 43%;
-        background:
-          radial-gradient(circle at 36% 31%, #ffffff66 0 5%, transparent 18%),
-          radial-gradient(circle at 36% 51%, #fff 0 3%, transparent 4%),
-          radial-gradient(circle at 64% 51%, #fff 0 3%, transparent 4%),
-          radial-gradient(circle at 37% 52%, #17191a 0 1.8%, transparent 2.6%),
-          radial-gradient(circle at 63% 52%, #17191a 0 1.8%, transparent 2.6%),
-          linear-gradient(105deg,#7a4d38,#d8a57d 45%,#f1c8a5 78%,#9a6448);
-        box-shadow: inset -2px -2px 4px #0005, 2px 2px 4px #0007;
-        transform: rotateY(var(--gx3d-tilt, 4deg));
-        animation: gxAvatar3DFloat 3.8s ease-in-out infinite;
+      .gx-avatar3d {
+        position: relative;
+        display: inline-block;
+        flex: 0 0 auto;
+        width: var(--gx3d-size);
+        height: var(--gx3d-size);
+        perspective: 260px;
+        isolation: isolate;
+        filter: drop-shadow(0 4px 5px #0008);
+        overflow: visible;
       }
-      .avatar:not(.has-photo)::after {
-        width: 66%; height: 48%; left: 17%; bottom: 9%; border-radius: 24% 24% 12% 12%;
-        background:
-          linear-gradient(100deg,#0c1012 0 28%,#252a2d 47%,#101416 74%),
-          linear-gradient(#c7a66e,#c7a66e);
-        box-shadow: inset 2px 0 4px #fff2, 0 3px 5px #0008;
-        transform: perspective(100px) rotateY(var(--gx3d-tilt, 4deg));
-        animation: gxAvatar3DFloat 3.8s ease-in-out infinite;
+      .gx-avatar3d-glow {
+        position: absolute;
+        inset: 7%;
+        border-radius: 50%;
+        background: radial-gradient(circle, #c7a66e44, transparent 68%);
+        opacity: .22;
       }
-      .avatar:not(.has-photo) { background: radial-gradient(circle at 50% 15%,#c7a66e33,transparent 52%),linear-gradient(180deg,#24282a,#151819) !important; }
-      .avatar:not(.has-photo) .avatar-plate { background: linear-gradient(#0000,#0005); }
-      .avatar:not(.has-photo) { box-shadow: inset 0 1px 0 #ffffff12, 0 5px 14px #0009; }
-      .avatar:not(.has-photo)::marker { display:none; }
-      @keyframes gxAvatar3DFloat { 0%,100% { translate: 0 0; } 50% { translate: 0 -1px; } }
-      @media (prefers-reduced-motion: reduce) { .avatar:not(.has-photo)::before,.avatar:not(.has-photo)::after { animation:none; } }
-      @supports not (transform-style: preserve-3d) {
-        .avatar:not(.has-photo) .pixel-avatar-wrapper { opacity: 1; pointer-events: auto; transform: none; }
-        .avatar:not(.has-photo)::before,.avatar:not(.has-photo)::after { display:none; }
+      .gx-avatar3d-shadow {
+        position: absolute;
+        left: 14%;
+        right: 14%;
+        bottom: 3%;
+        height: 13%;
+        border-radius: 50%;
+        background: #0008;
+        filter: blur(2px);
       }
-
-      .gx-avatar3d { position:relative; display:inline-block; width:var(--gx3d-size); height:var(--gx3d-size); perspective:260px; isolation:isolate; filter:drop-shadow(0 4px 5px #0008); }
-      .gx-avatar3d-glow { position:absolute; inset:7%; border-radius:50%; background:radial-gradient(circle,#c7a66e44,transparent 68%); opacity:.22; }
-      .gx-avatar3d-shadow { position:absolute; left:14%; right:14%; bottom:3%; height:13%; border-radius:50%; background:#0008; filter:blur(2px); }
-      .gx-avatar3d-figure { position:absolute; inset:0; transform:rotateY(var(--gx3d-tilt)); transform-origin:50% 72%; animation:gxAvatar3DIdle 3.8s ease-in-out infinite; }
-      .gx-avatar3d-legs { position:absolute; left:31%; right:31%; bottom:7%; height:29%; display:flex; gap:8%; justify-content:center; z-index:1; }
-      .gx-avatar3d-legs i { width:37%; border-radius:38% 38% 28% 28%; background:linear-gradient(90deg,#111519,#303437 52%,#0c0f11); box-shadow:inset 2px 0 2px #fff1; }
-      .gx-avatar3d-torso { position:absolute; left:21%; right:21%; bottom:22%; height:42%; border-radius:25% 25% 14% 14%; background:linear-gradient(100deg,#111416,#2b2e30 45%,#0d1012); box-shadow:inset 3px 0 5px #fff2,0 3px 5px #0007; overflow:hidden; }
-      .gx-avatar3d-lapel { position:absolute; top:8%; width:27%; height:55%; border-left:1px solid #c7a66e66; }
-      .gx-avatar3d-lapel.left { left:26%; transform:skewY(25deg); }.gx-avatar3d-lapel.right { right:26%; transform:skewY(-25deg); }
-      .gx-avatar3d-tie { position:absolute; top:10%; left:46%; width:8%; height:45%; background:linear-gradient(#c7a66e,#745c34); clip-path:polygon(35% 0,65% 0,100% 20%,62% 100%,38% 100%,0 20%); }
-      .gx-avatar3d-badge { position:absolute; right:14%; top:30%; width:17%; aspect-ratio:1; border-radius:3px; background:#c7a66e; color:#151719; font:700 45% Arial; text-align:center; line-height:2; }
-      .gx-avatar3d-neck { position:absolute; left:42%; bottom:57%; width:16%; height:12%; border-radius:35%; background:linear-gradient(90deg,var(--gx3d-skin-dark),var(--gx3d-skin),var(--gx3d-skin-light)); z-index:2; }
-      .gx-avatar3d-head { position:absolute; left:27%; right:27%; top:13%; height:44%; border-radius:45% 45% 43% 43%; background:linear-gradient(100deg,var(--gx3d-skin-dark),var(--gx3d-skin) 42%,var(--gx3d-skin-light)); box-shadow:inset -3px -2px 5px #0004,2px 2px 5px #0007; z-index:3; }
-      .gx-avatar3d-hair { position:absolute; left:-4%; right:-4%; top:-9%; height:43%; background:var(--gx3d-hair); box-shadow:inset 2px 2px 4px #fff2,0 2px 3px #0007; z-index:4; border-radius:48% 48% 32% 32%; }
-      .gx-avatar3d-hair.hair-afro,.gx-avatar3d-hair.hair-curls { top:-17%; height:52%; border-radius:50%; transform:scaleX(1.08); }
-      .gx-avatar3d-hair.hair-bob,.gx-avatar3d-hair.hair-waves,.gx-avatar3d-hair.hair-long,.gx-avatar3d-hair.hair-ponytail { height:57%; top:-11%; border-radius:45% 45% 35% 35%; }
-      .gx-avatar3d-ear { position:absolute; top:42%; width:13%; height:22%; border-radius:50%; background:var(--gx3d-skin); }.gx-avatar3d-ear.left{left:-8%}.gx-avatar3d-ear.right{right:-8%}
-      .gx-avatar3d-eye { position:absolute; top:48%; width:11%; height:8%; border-radius:50%; background:#fff; }.gx-avatar3d-eye:after{content:"";position:absolute;inset:25%;border-radius:50%;background:#171717}.gx-avatar3d-eye.left{left:24%}.gx-avatar3d-eye.right{right:24%}
-      .gx-avatar3d-mouth { position:absolute; left:39%; top:68%; width:22%; height:9%; border-bottom:1.5px solid #7d3934; border-radius:0 0 50% 50%; }
-      .gx-avatar3d-beard { position:absolute; left:20%; right:20%; bottom:5%; height:28%; background:linear-gradient(#0000,var(--gx3d-hair)); border-radius:0 0 45% 45%; opacity:.72; z-index:4; }
-      .gx-avatar3d-glasses { position:absolute; left:18%; right:18%; top:45%; height:14%; z-index:5; border:1px solid #c7a66e; border-radius:4px; box-shadow:42% 0 0 -1px #0000; }
-      .gx-avatar3d-glasses.round { border-radius:50%; }
-      .gx-avatar3d-headset { position:absolute; left:-11%; right:-11%; top:13%; height:55%; border:2px solid #34393c; border-bottom:0; border-radius:50%; z-index:1; }
-      .gx-avatar3d-cap { position:absolute; left:-4%; right:-4%; top:-12%; height:23%; border-radius:55% 55% 20% 20%; background:linear-gradient(90deg,#111416,#303538); z-index:6; }
-      .gx-avatar3d-hand { position:absolute; right:10%; top:24%; width:17%; height:29%; border-radius:45%; background:linear-gradient(90deg,var(--gx3d-skin-dark),var(--gx3d-skin)); z-index:5; transform:rotate(-25deg); animation:gxAvatar3DWave .9s ease-in-out infinite alternate; }
-      @keyframes gxAvatar3DIdle { 0%,100% { transform:rotateY(var(--gx3d-tilt)) translateY(0); } 50% { transform:rotateY(var(--gx3d-tilt)) translateY(-2.5%); } }
-      @keyframes gxAvatar3DWave { from { transform:rotate(-32deg); } to { transform:rotate(-8deg); } }
-      @media (prefers-reduced-motion: reduce) { .gx-avatar3d-figure,.gx-avatar3d-hand { animation:none; } }
+      .gx-avatar3d-figure {
+        position: absolute;
+        inset: 0;
+        transform: rotateY(var(--gx3d-tilt));
+        transform-origin: 50% 72%;
+        animation: gxAvatar3DIdle 3.8s ease-in-out infinite;
+      }
+      .gx-avatar3d-legs {
+        position: absolute;
+        left: 31%;
+        right: 31%;
+        bottom: 7%;
+        height: 29%;
+        display: flex;
+        gap: 8%;
+        justify-content: center;
+        z-index: 1;
+      }
+      .gx-avatar3d-legs i {
+        width: 37%;
+        border-radius: 38% 38% 28% 28%;
+        background: linear-gradient(90deg, #111519, #303437 52%, #0c0f11);
+        box-shadow: inset 2px 0 2px #fff1;
+      }
+      .gx-avatar3d-torso {
+        position: absolute;
+        left: 21%;
+        right: 21%;
+        bottom: 22%;
+        height: 42%;
+        border-radius: 25% 25% 14% 14%;
+        background: linear-gradient(100deg, #111416, #2b2e30 45%, #0d1012);
+        box-shadow: inset 3px 0 5px #fff2, 0 3px 5px #0007;
+        overflow: hidden;
+      }
+      .gx-avatar3d-lapel {
+        position: absolute;
+        top: 8%;
+        width: 27%;
+        height: 55%;
+        border-left: 1px solid #c7a66e66;
+      }
+      .gx-avatar3d-lapel.left { left: 26%; transform: skewY(25deg); }
+      .gx-avatar3d-lapel.right { right: 26%; transform: skewY(-25deg); }
+      .gx-avatar3d-tie {
+        position: absolute;
+        top: 10%;
+        left: 46%;
+        width: 8%;
+        height: 45%;
+        background: linear-gradient(#c7a66e, #745c34);
+        clip-path: polygon(35% 0, 65% 0, 100% 20%, 62% 100%, 38% 100%, 0 20%);
+      }
+      .gx-avatar3d-badge {
+        position: absolute;
+        right: 14%;
+        top: 30%;
+        width: 17%;
+        aspect-ratio: 1;
+        border-radius: 3px;
+        background: #c7a66e;
+        color: #151719;
+        font: 700 45% Arial;
+        text-align: center;
+        line-height: 2;
+      }
+      .gx-avatar3d-neck {
+        position: absolute;
+        left: 42%;
+        bottom: 57%;
+        width: 16%;
+        height: 12%;
+        border-radius: 35%;
+        background: linear-gradient(90deg, var(--gx3d-skin-dark), var(--gx3d-skin), var(--gx3d-skin-light));
+        z-index: 2;
+      }
+      .gx-avatar3d-head {
+        position: absolute;
+        left: 27%;
+        right: 27%;
+        top: 13%;
+        height: 44%;
+        border-radius: 45% 45% 43% 43%;
+        background: linear-gradient(100deg, var(--gx3d-skin-dark), var(--gx3d-skin) 42%, var(--gx3d-skin-light));
+        box-shadow: inset -3px -2px 5px #0004, 2px 2px 5px #0007;
+        z-index: 3;
+      }
+      .gx-avatar3d-hair {
+        position: absolute;
+        left: -4%;
+        right: -4%;
+        top: -9%;
+        height: 43%;
+        background: var(--gx3d-hair);
+        box-shadow: inset 2px 2px 4px #fff2, 0 2px 3px #0007;
+        z-index: 4;
+        border-radius: 48% 48% 32% 32%;
+      }
+      .gx-avatar3d-hair.hair-afro,
+      .gx-avatar3d-hair.hair-curls { top: -17%; height: 52%; border-radius: 50%; transform: scaleX(1.08); }
+      .gx-avatar3d-hair.hair-bob,
+      .gx-avatar3d-hair.hair-waves,
+      .gx-avatar3d-hair.hair-long,
+      .gx-avatar3d-hair.hair-ponytail { height: 57%; top: -11%; border-radius: 45% 45% 35% 35%; }
+      .gx-avatar3d-ear {
+        position: absolute;
+        top: 42%;
+        width: 13%;
+        height: 22%;
+        border-radius: 50%;
+        background: var(--gx3d-skin);
+      }
+      .gx-avatar3d-ear.left { left: -8%; }
+      .gx-avatar3d-ear.right { right: -8%; }
+      .gx-avatar3d-eye {
+        position: absolute;
+        top: 48%;
+        width: 11%;
+        height: 8%;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .gx-avatar3d-eye:after { content: ""; position: absolute; inset: 25%; border-radius: 50%; background: #171717; }
+      .gx-avatar3d-eye.left { left: 24%; }
+      .gx-avatar3d-eye.right { right: 24%; }
+      .gx-avatar3d-mouth {
+        position: absolute;
+        left: 39%;
+        top: 68%;
+        width: 22%;
+        height: 9%;
+        border-bottom: 1.5px solid #7d3934;
+        border-radius: 0 0 50% 50%;
+      }
+      .gx-avatar3d-beard {
+        position: absolute;
+        left: 20%;
+        right: 20%;
+        bottom: 5%;
+        height: 28%;
+        background: linear-gradient(#0000, var(--gx3d-hair));
+        border-radius: 0 0 45% 45%;
+        opacity: .72;
+        z-index: 4;
+      }
+      .gx-avatar3d-glasses {
+        position: absolute;
+        left: 18%;
+        right: 18%;
+        top: 45%;
+        height: 14%;
+        z-index: 5;
+        border: 1px solid #c7a66e;
+        border-radius: 4px;
+      }
+      .gx-avatar3d-glasses.round { border-radius: 50%; }
+      .gx-avatar3d-headset {
+        position: absolute;
+        left: -11%;
+        right: -11%;
+        top: 13%;
+        height: 55%;
+        border: 2px solid #34393c;
+        border-bottom: 0;
+        border-radius: 50%;
+        z-index: 1;
+      }
+      .gx-avatar3d-cap {
+        position: absolute;
+        left: -4%;
+        right: -4%;
+        top: -12%;
+        height: 23%;
+        border-radius: 55% 55% 20% 20%;
+        background: linear-gradient(90deg, #111416, #303538);
+        z-index: 6;
+      }
+      .gx-avatar3d-hand {
+        position: absolute;
+        right: 10%;
+        top: 24%;
+        width: 17%;
+        height: 29%;
+        border-radius: 45%;
+        background: linear-gradient(90deg, var(--gx3d-skin-dark), var(--gx3d-skin));
+        z-index: 5;
+        transform: rotate(-25deg);
+        animation: gxAvatar3DWave .9s ease-in-out infinite alternate;
+      }
+      .gx-avatar3d-sit .gx-avatar3d-figure { transform: rotateY(var(--gx3d-tilt)) translateY(7%); transform-origin: 50% 72%; }
+      .gx-avatar3d-wave .gx-avatar3d-hand { display: block; }
+      .gx-avatar3d-walk .gx-avatar3d-legs i:first-child { animation: gxAvatar3DWalkA .55s ease-in-out infinite alternate; }
+      .gx-avatar3d-walk .gx-avatar3d-legs i:last-child { animation: gxAvatar3DWalkB .55s ease-in-out infinite alternate; }
+      .gx-avatar3d-sit .gx-avatar3d-legs { bottom: 12%; height: 22%; transform: skewX(-8deg); }
+      @keyframes gxAvatar3DIdle { 0%,100% { transform: rotateY(var(--gx3d-tilt)) translateY(0); } 50% { transform: rotateY(var(--gx3d-tilt)) translateY(-2.5%); } }
+      @keyframes gxAvatar3DWave { from { transform: rotate(-32deg); } to { transform: rotate(-8deg); } }
+      @keyframes gxAvatar3DWalkA { from { transform: translateY(-3%); } to { transform: translateY(4%); } }
+      @keyframes gxAvatar3DWalkB { from { transform: translateY(4%); } to { transform: translateY(-3%); } }
+      @media (prefers-reduced-motion: reduce) {
+        .gx-avatar3d-figure,
+        .gx-avatar3d-hand,
+        .gx-avatar3d-walk .gx-avatar3d-legs i { animation: none; }
+      }
     `}</style>
   );
 }
