@@ -4,6 +4,7 @@ import { Armchair, Monitor, Presentation, Coffee, ShieldCheck, X } from "lucide-
 import { initials, type Direction, type AvatarAction } from "@/lib/workspace";
 import { buildSprite, LAYER_NAMES, SPRITE_W, SPRITE_H, type LayerName } from "@/lib/avatar-sprite";
 import { parseLook, hashId, GOLD, GOLD_LIGHT } from "@/lib/avatar";
+import { Avatar3D } from "@/components/avatar-3d";
 
 export function BrandMark({ size = 44 }: { size?: number }) {
   const id = useId().replace(/:/g, "");
@@ -44,6 +45,7 @@ export function Avatar({
   ring?: boolean;
 }) {
   const photo = member.avatar && /^https?:\/\//.test(member.avatar) ? member.avatar : "";
+  const avatarMember = { ...member, action: member.action || "idle", direction: member.direction || "dr" };
   return (
     <span
       className={`avatar ${photo ? "has-photo" : ""} ${className}`}
@@ -59,11 +61,7 @@ export function Avatar({
         // eslint-disable-next-line @next/next/no-img-element -- URL externa arbitrária do perfil, sem dominio conhecido para o next/image
         <img src={photo} alt={initials(member.name || "")} loading="lazy" />
       ) : (
-        <PixelAvatar
-          member={{ ...member, action: member.action || "idle", direction: member.direction || "dr" }}
-          size={Math.max(15, Math.round(size * 0.94))}
-          preview={size < 30}
-        />
+        <Avatar3D member={avatarMember} size={Math.max(15, Math.round(size * 0.94))} />
       )}
       {status && <i className={`presence-dot ${member.status || "available"}`} />}
       {ring && <i className="avatar-ring" />}
@@ -73,7 +71,7 @@ export function Avatar({
 
 export type AvatarLike = {
   id?: string;
-  /** URL de foto, se houver. Sem foto, o sprite pixel do avatar é a identidade. */
+  /** URL de foto, se houver. Sem foto, o avatar 3D é a identidade visual. */
   avatar?: string | null;
   name?: string;
   color: string;
@@ -90,9 +88,8 @@ export type AvatarLike = {
 const INK = "#0b0e10";
 
 /**
- * Sprite do avatar. Toda a arte vem de `buildSprite` (camadas de pixels);
- * aqui entram só as camadas animadas, o contorno por dilatação de alpha
- * (feMorphology), a luz de recorte dourada e a sombra de chão suavizada.
+ * Sprite legado do avatar. Mantido como renderer de compatibilidade e para
+ * previews/scripts antigos enquanto o avatar 3D assume a interface principal.
  */
 export function PixelAvatar({
   member,
