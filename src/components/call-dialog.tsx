@@ -14,10 +14,15 @@ function VideoTile({ member, stream, local = false, cameraOn, micOn, sharing = f
   const ref = useRef<HTMLVideoElement>(null); const [blocked, setBlocked] = useState(false);
   useEffect(() => {
     const video = ref.current; if (!video) return;
-    video.srcObject = stream || null; video.volume = volume / 100;
+    video.srcObject = stream || null;
     if (stream) video.play().then(() => setBlocked(false)).catch(() => setBlocked(true));
     return () => { video.srcObject = null; };
-  }, [stream, volume]);
+  }, [stream]);
+  useEffect(() => {
+    // Volume não deve reanexar o stream (isso reiniciava vídeo/áudio a cada
+    // ajuste do slider) — só ajusta o elemento já conectado.
+    const video = ref.current; if (video) video.volume = volume / 100;
+  }, [volume]);
   return <div className={`video-tile ${local ? "local-tile" : ""} ${sharing ? "screen-tile" : ""}`}><div className="video-placeholder" style={{ background: `radial-gradient(ellipse at center, ${member.color}20, transparent 75%)` }}><Avatar member={member} size={76}/><span>{!local && !stream ? "Conectando…" : cameraOn ? "Preparando vídeo…" : "Câmera desativada"}</span></div><video ref={ref} autoPlay playsInline muted={local} className={cameraOn || sharing ? "video-visible" : "video-hidden"}/><div className="video-tile-label"><span>{member.name}{local && " (você)"}</span>{sharing ? <span className="sharing-label"><MonitorUp size={13}/>Apresentando</span> : micOn ? <Mic size={14}/> : <MicOff size={14}/>}</div>{blocked && !local && <button className="video-play-button button button-secondary" onClick={() => void ref.current?.play().then(() => setBlocked(false))}><Volume2 size={16}/>Ativar áudio</button>}</div>;
 }
 export function ActiveCallDialog({ room, me, call, onMinimize, onInvite, volume }: { room: Room; me: Member; call: CallController; onMinimize: () => void; onInvite: () => void; volume: number }) {

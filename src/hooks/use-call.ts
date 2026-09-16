@@ -3,10 +3,42 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Member } from "@/lib/workspace";
 
 type SignalPayload = { description?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit };
-type Peer = { pc: RTCPeerConnection; audio: RTCRtpSender; video: RTCRtpSender; makingOffer: boolean; ignoreOffer: boolean; settingAnswer: boolean; candidates: RTCIceCandidateInit[]; stream: MediaStream };
+type Peer = { pc: RTCPeerConnection; audio: RTCRtpSender; video: RTCRtpSender; makingOffer: boolean; ignoreOffer: boolean; settingAnswer: boolean; candidates: RTCIceCandidateInit[]; stream: MediaStream; recoveryTimer: ReturnType<typeof setTimeout> | null };
 type CallPoll = { participants: Member[]; signals: { id: number; fromId: string; payload: SignalPayload }[] };
 export type CallMode = "audio" | "video" | "listen";
 export type DevicePreferences = { audioId?: string; videoId?: string };
+
+function closePeer(peer: Peer) {
+  if (peer.recoveryTimer) { clearTimeout(peer.recoveryTimer); peer.recoveryTimer = null; }
+  peer.pc.close();
+}
+
+function hasDeviceId(constraint?: boolean | MediaTrackConstraints): boolean {
+  return typeof constraint === "object" && constraint !== null && !!constraint.deviceId;
+}
+
+// Um dispositivo salvo nas preferências (mic/câmera) pode não existir mais —
+// desconectado, permissão revogada para aquele device específico, fone
+// bluetooth desparelhado. deviceId "exact" falha com OverconstrainedError
+// nesse caso e, sem este fallback, a pessoa não conseguia entrar na chamada
+// nem ligar o microfone/câmera até corrigir manualmente nas preferências.
+async function requestMedia(constraints: MediaStreamConstraints, onFallback?: () => void): Promise<MediaStream> {
+  try {
+    return await navigator.mediaDevices.getUserMedia(constraints);
+  } catch (error) {
+    const overconstrained = (error as { name?: string })?.name === "OverconstrainedError";
+    if (overconstrained && (hasDeviceId(constraints.audio) || hasDeviceId(constraints.video))) {
+      const strip = (c?: boolean | MediaTrackConstraints) => {
+        if (typeof c !== "object" || c === null) return c;
+        const { deviceId: _deviceId, ...rest } = c; return rest;
+      };
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: strip(constraints.audio), video: strip(constraints.video) });
+      onFallback?.();
+      return stream;
+    }
+    throw error;
+  }
+}
 
 export function useCall(me: Member, notify: (message: string) => void, onChange: () => void) {
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -40,7 +72,7 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
     const pc = new RTCPeerConnection(config.current);
     const audio = pc.addTransceiver("audio", { direction: "sendrecv" }).sender;
     const video = pc.addTransceiver("video", { direction: "sendrecv" }).sender;
-    const peer: Peer = { pc, audio, video, makingOffer: false, ignoreOffer: false, settingAnswer: false, candidates: [], stream: new MediaStream() };
+    const peer: Peer = { pc, audio, video, makingOffer: false, ignoreOffer: false, settingAnswer: false, candidates: [], stream: new MediaStream(), recoveryTimer: null };
     peers.current.set(id, peer);
     void audio.replaceTrack(local.current?.getAudioTracks()[0] || null);
     void video.replaceTrack(screen.current?.getVideoTracks()[0] || local.current?.getVideoTracks()[0] || null);
@@ -59,14 +91,34 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
       finally { peer.makingOffer = false; }
     };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") { pc.restartIce(); notify("Reconectando a chamada. Em redes restritas, pode ser necessário configurar um servidor TURN."); }
+      if (peer.recoveryTimer) { clearTimeout(peer.recoveryTimer); peer.recoveryTimer = null; }
+      if (pc.connectionState === "failed") {
+        pc.restartIce();
+        notify("Reconectando a chamada. Em redes restritas, pode ser necessário configurar um servidor TURN.");
+      } else if (pc.connectionState === "disconnected") {
+        // "disconnected" é comum e costuma se resolver sozinho em 1-2s (troca de
+        // wifi/dados no celular, rede instável). Só forçamos restartIce() se
+        // continuar assim depois de um tempo, em vez de esperar os ~30s que
+        // alguns navegadores levam para declarar "failed".
+        peer.recoveryTimer = setTimeout(() => {
+          peer.recoveryTimer = null;
+          if (pc.connectionState === "disconnected") pc.restartIce();
+        }, 3000);
+      }
     };
     return peer;
   }, [sendSignal, notify]);
 
   const handleSignal = useCallback(async (fromId: string, payload: SignalPayload) => {
     const peer = getPeer(fromId); const pc = peer.pc;
-    const polite = meRef.current.id.localeCompare(fromId) > 0;
+    // Comparação ordinal (não localeCompare): os dois lados precisam concordar
+    // em quem é "polite" para o padrão de negociação perfeita funcionar.
+    // localeCompare depende do locale/coleção do navegador — em teoria dois
+    // dispositivos com locales diferentes podem discordar sobre a ordem e os
+    // dois lados viram "impolite" (ou "polite") ao mesmo tempo, travando a
+    // renegociação. Comparação de string simples é sempre a mesma em qualquer
+    // navegador/locale.
+    const polite = meRef.current.id > fromId;
     if (payload.description) {
       const ready = !peer.makingOffer && (pc.signalingState === "stable" || peer.settingAnswer);
       const collision = payload.description.type === "offer" && !ready;
@@ -104,7 +156,7 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
         }
         const ids = new Set(data.participants.map(p => p.id));
         for (const [id, peer] of peers.current) if (!ids.has(id)) {
-          peer.pc.close(); peers.current.delete(id);
+          closePeer(peer); peers.current.delete(id);
           setRemoteStreams(previous => { const next = { ...previous }; delete next[id]; return next; });
         }
       } catch { failures++; if (failures === 4) notify("A conexão com a chamada está instável. Estamos tentando reconectar."); }
@@ -116,7 +168,7 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
 
   const clearMedia = useCallback(() => {
     generation.current++;
-    peers.current.forEach(peer => peer.pc.close()); peers.current.clear();
+    peers.current.forEach(closePeer); peers.current.clear();
     local.current?.getTracks().forEach(track => track.stop());
     screen.current?.getTracks().forEach(track => { track.onended = null; track.stop(); });
     local.current = null; screen.current = null; activeRoom.current = null;
@@ -151,10 +203,10 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
       devices.current = preferences;
       if (mode !== "listen") {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error("Seu navegador precisa de uma conexão HTTPS para acessar a câmera e o microfone.");
-        stream = await navigator.mediaDevices.getUserMedia({
+        stream = await requestMedia({
           audio: { echoCancellation: true, noiseSuppression: true, ...(preferences.audioId ? { deviceId: { exact: preferences.audioId } } : {}) },
           video: mode === "video" ? { width: { ideal: 960 }, height: { ideal: 540 }, ...(preferences.videoId ? { deviceId: { exact: preferences.videoId } } : {}) } : false,
-        });
+        }, () => notify("O dispositivo salvo nas preferências não está mais disponível — usamos o padrão do sistema."));
       } else stream = new MediaStream();
       const result = await api<{ iceServers: RTCIceServer[] }>("/api/call", { method: "POST", body: JSON.stringify({ action: "join", roomId: targetRoom, micEnabled: mode !== "listen", cameraEnabled: mode === "video" }) });
       config.current = { iceServers: result.iceServers };
@@ -166,7 +218,7 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
       if (error instanceof DOMException && error.name === "NotFoundError") throw new Error("Não encontramos a câmera ou o microfone. Conecte um dispositivo ou entre apenas para ouvir.");
       throw error;
     } finally { setConnecting(false); }
-  }, [leave, onChange]);
+  }, [leave, onChange, notify]);
 
   const updateMedia = useCallback((mic: boolean, cam: boolean) => {
     void api("/api/call", { method: "POST", body: JSON.stringify({ action: "media", micEnabled: mic, cameraEnabled: cam }) }).then(onChange).catch(() => {});
@@ -178,7 +230,7 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
       let track = local.current?.getAudioTracks()[0];
       const enabled = !micOn;
       if (!track && enabled) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, ...(devices.current.audioId ? { deviceId: { exact: devices.current.audioId } } : {}) } });
+        const stream = await requestMedia({ audio: { echoCancellation: true, ...(devices.current.audioId ? { deviceId: { exact: devices.current.audioId } } : {}) } }, () => notify("O microfone salvo nas preferências não está mais disponível — usamos o padrão do sistema."));
         track = stream.getAudioTracks()[0]; local.current?.addTrack(track);
         await Promise.all([...peers.current.values()].map(peer => peer.audio.replaceTrack(track!)));
       }
@@ -208,7 +260,7 @@ export function useCall(me: Member, notify: (message: string) => void, onChange:
       const enabled = !cameraOn;
       let track: MediaStreamTrack | null = null;
       if (enabled) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 960 }, ...(devices.current.videoId ? { deviceId: { exact: devices.current.videoId } } : {}) } });
+        const stream = await requestMedia({ video: { width: { ideal: 960 }, ...(devices.current.videoId ? { deviceId: { exact: devices.current.videoId } } : {}) } }, () => notify("A câmera salva nas preferências não está mais disponível — usamos o padrão do sistema."));
         track = stream.getVideoTracks()[0]; local.current?.addTrack(track);
       } else {
         local.current?.getVideoTracks().forEach(t => { t.stop(); local.current?.removeTrack(t); });
