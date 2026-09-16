@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Check, Dice5, RotateCcw, Sparkles } from "lucide-react";
-import { PixelAvatar } from "@/components/ui";
+import { Avatar3D } from "@/components/avatar-3d";
 import { AVATAR_COLORS } from "@/lib/workspace";
 import {
   ACCESSORY_STYLES, AVATAR_PRESETS, DEFAULT_LOOK, EXPRESSION_STYLES, FACIAL_STYLES, GLASSES_STYLES,
@@ -13,7 +13,7 @@ type Preview = "idle" | "sit" | "wave";
 type View = "front" | "back";
 
 /**
- * Estúdio do avatar: palco com o sprite grande, previas ao vivo de cada opção
+ * Estúdio do avatar: palco com o avatar 3D grande, previas ao vivo de cada opção
  * e presets prontos. Toda escolha vira um `AvatarLook`, serializado no perfil.
  */
 export function AvatarStudio({
@@ -47,13 +47,9 @@ export function AvatarStudio({
       <div className="avatar-stage">
         <div className="stage-light" />
         <div className="stage-floor" />
-        <PixelAvatar
-          member={memberFor(look)}
+        <Avatar3D
+          member={{ ...memberFor(look), action: preview, direction: view === "back" ? "ur" : "dr" }}
           size={148}
-          own
-          preview={false}
-          action={preview}
-          direction={view === "back" ? "ur" : "dr"}
         />
         <div className="stage-tools" role="group" aria-label="Prévia do avatar">
           {([["front", "Frente"], ["back", "Costas"]] as [View, string][]).map(([id, label]) => (
@@ -183,7 +179,7 @@ function SpriteOption({ label, hint, selected, member, onClick }: { label: strin
   return (
     <button type="button" className={`sprite-option ${selected ? "on" : ""}`} onClick={onClick} title={hint || label} aria-label={label} aria-pressed={selected}>
       <span className="sprite-option-art">
-        <PixelAvatar member={member} size={54} preview />
+        <Avatar3D member={member} size={54} />
       </span>
       <span className="sprite-option-label">{label}</span>
       {selected && <Check size={12} className="sprite-option-check" />}
@@ -225,7 +221,7 @@ export function AvatarQuickPick({
   return (
     <div className="avatar-quickpick">
       <div className="quickpick-preview">
-        <PixelAvatar member={member} size={96} own />
+        <Avatar3D member={member} size={96} />
       </div>
       <div className="quickpick-controls">
         <span className="studio-row-label">{title}</span>
@@ -233,7 +229,7 @@ export function AvatarQuickPick({
           <div className="quickpick-gender">
             {[{ value: "male", label: "Masculino" }, { value: "female", label: "Feminino" }].map(option => (
               <button key={option.value} type="button" className={gender === option.value ? "on" : ""} onClick={() => onGender(option.value)}>
-                <PixelAvatar member={{ ...member, gender: option.value, avatarLook: serializeLook(defaultLookFor(option.value)) }} size={38} preview />
+                <Avatar3D member={{ ...member, gender: option.value, avatarLook: serializeLook(defaultLookFor(option.value)) }} size={38} />
                 <span>{option.label}</span>
               </button>
             ))}
@@ -242,7 +238,7 @@ export function AvatarQuickPick({
         <div className="quickpick-presets">
           {AVATAR_PRESETS.map(preset => (
             <button key={preset.id} type="button" title={preset.hint} onClick={() => onLook(presetLook(preset.id, look))}>
-              <PixelAvatar member={{ ...member, avatarLook: serializeLook(presetLook(preset.id, look)) }} size={44} preview />
+              <Avatar3D member={{ ...member, avatarLook: serializeLook(presetLook(preset.id, look)) }} size={44} />
             </button>
           ))}
         </div>
