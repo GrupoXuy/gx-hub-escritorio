@@ -1,0 +1,104 @@
+/* GX Hub — refinamento visual premium e leitura feminina do avatar.
+   Camada adicional sobre o renderer procedural, sem alterar o contrato do AvatarLook. */
+
+.gx-avatar3d{
+  filter:drop-shadow(0 5px 7px #0009);
+}
+
+.gx-avatar3d-glow{
+  box-shadow:0 0 18px #c7a66e12;
+  opacity:.3;
+}
+
+.gx-avatar3d-head{
+  box-shadow:inset -3px -2px 6px #0004, inset 2px 1px 4px #fff2, 2px 3px 6px #0008;
+}
+
+.gx-avatar3d-hair{
+  background:linear-gradient(135deg,var(--gx3d-hair),var(--gx3d-hair) 62%,#ffffff18);
+  box-shadow:inset 2px 2px 5px #fff3, inset -2px -2px 4px #0004, 0 2px 4px #0008;
+}
+
+.gx-avatar3d-eye{
+  box-shadow:0 1px 2px #0004;
+}
+.gx-avatar3d-eye::before{
+  content:"";
+  position:absolute;
+  left:8%;right:8%;top:-22%;height:18%;
+  border-top:1px solid #4a2d25aa;
+  border-radius:50%;
+}
+
+/* Leitura feminina: rosto ligeiramente mais delicado, cílios e boca mais definida.
+   O seletor usa os penteados tradicionalmente escolhidos no modo feminino do estúdio. */
+.gx-avatar3d:has(.hair-waves,.hair-bob,.hair-long,.hair-ponytail,.hair-bun,.hair-pixie) .gx-avatar3d-head{
+  left:29%;right:29%;
+  border-radius:48% 48% 46% 46%;
+}
+.gx-avatar3d:has(.hair-waves,.hair-bob,.hair-long,.hair-ponytail,.hair-bun,.hair-pixie) .gx-avatar3d-eye{
+  width:12%;height:7%;
+}
+.gx-avatar3d:has(.hair-waves,.hair-bob,.hair-long,.hair-ponytail,.hair-bun,.hair-pixie) .gx-avatar3d-eye::before{
+  border-top:2px solid #3b2924aa;
+}
+.gx-avatar3d:has(.hair-waves,.hair-bob,.hair-long,.hair-ponytail,.hair-bun,.hair-pixie) .gx-avatar3d-mouth{
+  border-bottom-color:#9b4e58;
+  border-bottom-width:2px;
+}
+
+/* Brilho e volume para cabelos longos/ondulados. */
+.gx-avatar3d:has(.hair-waves,.hair-long,.hair-bob) .gx-avatar3d-hair::after{
+  content:"";
+  position:absolute;
+  left:16%;top:8%;width:30%;height:55%;
+  border-radius:50%;
+  background:linear-gradient(120deg,#ffffff22,transparent 65%);
+  transform:rotate(12deg);
+}
+
+/* O modo feminino do seletor fica visualmente inequívoco. */
+.quickpick-gender > button:nth-child(2){
+  border-color:#c7a66e;
+  background:linear-gradient(180deg,#c7a66e18,#c7a66e08);
+}
+.quickpick-gender > button:nth-child(2) .gx-avatar3d{
+  filter:drop-shadow(0 4px 6px #c7a66e35);
+}
+
+/* Palco mais premium no editor. */
+.avatar-stage{
+  background:
+    radial-gradient(circle at 50% 28%,#ffffff0d,transparent 34%),
+    radial-gradient(circle at 50% 100%,#c7a66e10,transparent 48%),
+    linear-gradient(145deg,#0d1012,#171a1d 55%,#0b0d0f);
+  border:1px solid #c7a66e20;
+  box-shadow:inset 0 1px 0 #ffffff0b,0 10px 30px #0005;
+}
+
+.stage-floor{
+  opacity:.9;
+  filter:blur(.2px);
+}
+
+/* Pequenos acabamentos que mantêm a leitura das roupas em escala reduzida. */
+.gx-avatar3d-torso{
+  box-shadow:inset 3px 0 5px #fff3,inset -2px -2px 4px #0005,0 4px 7px #0008;
+}
+.gx-avatar3d:has(.outfit-suit) .gx-avatar3d-torso::after{
+  content:"";
+  position:absolute;
+  left:49%;top:8%;bottom:10%;width:1px;
+  background:#ffffff22;
+}
+.gx-avatar3d:has(.outfit-blazer) .gx-avatar3d-torso::after{
+  content:"";
+  position:absolute;
+  left:48%;top:10%;height:47%;width:4%;
+  border-left:1px solid #ffffff20;
+  transform:skewY(18deg);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .gx-avatar3d-hair,.gx-avatar3d-head{transition:none}
+}
