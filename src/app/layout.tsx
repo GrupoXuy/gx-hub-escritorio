@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { Avatar3DStyles } from "@/components/avatar-3d";
 import "./globals.css";
+import "./avatar-clothing.css";
 const manrope = localFont({ src: "../../public/fonts/manrope.ttf", variable: "--font-manrope", display: "swap", weight: "200 800" });
 export const metadata: Metadata = {
   metadataBase: new URL("https://gxhubofficemeet.vercel.app"),
