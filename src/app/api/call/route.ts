@@ -51,9 +51,9 @@ export async function GET(request: Request) {
     const staleBefore = new Date(Date.now() - 60000);
     const [participants, incoming] = await Promise.all([
       db.select().from(users).where(and(eq(users.callRoom, roomId), eq(users.isDemo, false), or(eq(users.isGuest, false), sql`${users.guestExpiresAt} > now()`), gt(users.lastSeen, new Date(Date.now() - 25000)))),
-      db.select().from(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), gt(signals.id, after))).orderBy(asc(signals.id)).limit(100)),
-      db.delete(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), lt(signals.createdAt, staleBefore))),
+      db.select().from(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), gt(signals.id, after))).orderBy(asc(signals.id)).limit(100),
     ]);
+    await db.delete(signals).where(and(eq(signals.toId, me.id), eq(signals.roomId, roomId), lt(signals.createdAt, staleBefore)));
     return Response.json({ participants: participants.map(publicMember), signals: incoming }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return fail(error); }
 }
