@@ -314,11 +314,8 @@ export function Calibrador() {
                           avatarLook: LOOK,
                           direction: spot.direction,
                           action: "sit",
-                          isAdmin: false,
                         }}
                         size={48}
-                        action="sit"
-                        direction={spot.direction}
                       />
                     ) : (
                       <span
