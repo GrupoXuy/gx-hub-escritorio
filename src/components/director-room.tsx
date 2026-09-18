@@ -360,8 +360,6 @@ export function DirectorRoom({
               size={48}
               own
               showRing={!isSitting}
-              action={isSitting ? "sit" : isLocalWalking ? "walk" : (data.me.action || "idle")}
-              direction={data.me.direction || "dr"}
               isMoving={isLocalWalking}
             />
             <span className="person-name">
