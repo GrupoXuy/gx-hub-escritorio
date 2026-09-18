@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { CalendarDays, Check, Clock3, LoaderCircle, Mail, MessageCircle, Maximize2, PhoneOff, ShieldCheck, Video, Users, X } from "lucide-react";
-import { PixelAvatar, BrandMark } from "@/components/ui";
+import { , BrandMark } from "@/components/ui";
+import { Avatar3D } from "@/components/avatar-3d";
 import { PrejoinDialog, ActiveCallDialog } from "@/components/call-dialog";
 import { OfficeMap } from "@/components/office-map";
 import { api, ROOM_POSITIONS, type AvatarAction, type Direction, type Member, type Room, type Workspace } from "@/lib/workspace";
@@ -136,7 +137,7 @@ export default function ClientMeetingPage({ token }: Props) {
       </section>
       {!submitted ? <section className="client-form-card"><div className="client-form-heading"><span className="client-form-icon"><MessageCircle size={19}/></span><div><h2>Antes de entrar</h2><p>Preencha seus dados para confirmarmos sua participação.</p></div></div><form onSubmit={submit}>
         <label className="form-field"><span>Nome completo</span><input required minLength={2} maxLength={120} value={name} onChange={e => setName(e.target.value)} placeholder="Como podemos chamar você?" autoComplete="name" /></label>
-        <div className="form-field"><span>Como você se identifica?</span><div className="client-gender-options"><button type="button" className={gender === "male" ? "selected" : ""} onClick={() => setGender("male")}><PixelAvatar member={{ id: "guest-male", color: "#7295a1", gender: "male", handRaised: false }} size={45}/>Masculino</button><button type="button" className={gender === "female" ? "selected" : ""} onClick={() => setGender("female")}><PixelAvatar member={{ id: "guest-female", color: "#b29bc3", gender: "female", handRaised: false }} size={45}/>Feminino</button></div></div>
+        <div className="form-field"><span>Como você se identifica?</span><div className="client-gender-options"><button type="button" className={gender === "male" ? "selected" : ""} onClick={() => setGender("male")}><Avatar3D member={{ id: "guest-male", color: "#7295a1", gender: "male", handRaised: false }} size={45}/>Masculino</button><button type="button" className={gender === "female" ? "selected" : ""} onClick={() => setGender("female")}><Avatar3D member={{ id: "guest-female", color: "#b29bc3", gender: "female", handRaised: false }} size={45}/>Feminino</button></div></div>
         <label className="form-field"><span>WhatsApp</span><input required value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(00) 00000-0000" inputMode="tel" autoComplete="tel" /></label>
         <label className="form-field"><span>Email</span><input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@empresa.com" autoComplete="email" /></label>
         {error && <div className="form-error" role="alert">{error}</div>}
