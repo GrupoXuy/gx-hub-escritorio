@@ -329,8 +329,6 @@ export function DirectorRoom({
               <Avatar3D
                 member={member}
                 size={48}
-                action={member.action || "idle"}
-                direction={member.direction || "dr"}
               />
               <span className="person-name">
                 {member.name.split(" ")[0]} {member.name.split(" ")[1]?.[0] || ""}.
