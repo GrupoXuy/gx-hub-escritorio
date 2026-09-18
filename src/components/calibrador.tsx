@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PixelAvatar } from "@/components/ui";
+import {  } from "@/components/ui";
+import { Avatar3D } from "@/components/avatar-3d";
 import { FLOOR_1_FURNITURE, FLOOR_2_FURNITURE, type FurnitureSpot, type Direction } from "@/lib/workspace";
 import { presetLook, serializeLook } from "@/lib/avatar";
 
@@ -305,7 +306,7 @@ export function Calibrador() {
                     onKeyDown={(event) => nudge(event, spot.id)}
                   >
                     {showAvatars ? (
-                      <PixelAvatar
+                      <Avatar3D
                         member={{
                           id: spot.id,
                           name: spot.label,
