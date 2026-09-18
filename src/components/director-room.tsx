@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { ShieldCheck, ArrowLeft, Maximize2, Minimize2, Minus, Plus, LocateFixed, MousePointer2, Mic, MicOff, Video, VideoOff, MonitorUp, Hand, Smile, Settings2, ChevronDown, Check, ArrowUpRight, PhoneOff, Lock, Armchair } from "lucide-react";
-import { Avatar, PixelAvatar, IconButton, RoomIcon } from "@/components/ui";
+import { Avatar, , IconButton, RoomIcon } from "@/components/ui";
+import { Avatar3D } from "@/components/avatar-3d";
 import { STATUS_LABELS, FLOOR_2_FURNITURE, seatAnchor, type Workspace, type Member, type Room, type FurnitureSpot, type Direction, type AvatarAction } from "@/lib/workspace";
 import type { CallController } from "@/hooks/use-call";
 
@@ -325,7 +326,7 @@ export function DirectorRoom({
                 e.stopPropagation();
               }}
             >
-              <PixelAvatar
+              <Avatar3D
                 member={member}
                 size={48}
                 action={member.action || "idle"}
@@ -356,7 +357,7 @@ export function DirectorRoom({
               onProfile();
             }}
           >
-            <PixelAvatar
+            <Avatar3D
               member={data.me}
               size={48}
               own
