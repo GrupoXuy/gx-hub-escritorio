@@ -82,16 +82,16 @@
 }
 
 /* Pequenos acabamentos que mantêm a leitura das roupas em escala reduzida. */
-.gx3d-torso{
+.gx3d-jacket{
   box-shadow:inset 3px 0 5px #fff3,inset -2px -2px 4px #0005,0 4px 7px #0008;
 }
-.gx3d:has(.outfit-suit) .gx3d-torso::after{
+.gx3d:has(.outfit-suit) .gx3d-jacket::after{
   content:"";
   position:absolute;
   left:49%;top:8%;bottom:10%;width:1px;
   background:#ffffff22;
 }
-.gx3d:has(.outfit-blazer) .gx3d-torso::after{
+.gx3d:has(.outfit-blazer) .gx3d-jacket::after{
   content:"";
   position:absolute;
   left:48%;top:10%;height:47%;width:4%;
