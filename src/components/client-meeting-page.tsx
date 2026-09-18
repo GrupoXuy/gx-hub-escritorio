@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { CalendarDays, Check, Clock3, LoaderCircle, Mail, MessageCircle, Maximize2, PhoneOff, ShieldCheck, Video, Users, X } from "lucide-react";
-import { , BrandMark } from "@/components/ui";
+import { BrandMark } from "@/components/ui";
 import { Avatar3D } from "@/components/avatar-3d";
 import { PrejoinDialog, ActiveCallDialog } from "@/components/call-dialog";
 import { OfficeMap } from "@/components/office-map";
