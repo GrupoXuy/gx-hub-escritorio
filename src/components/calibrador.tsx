@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {  } from "@/components/ui";
+
 import { Avatar3D } from "@/components/avatar-3d";
 import { FLOOR_1_FURNITURE, FLOOR_2_FURNITURE, type FurnitureSpot, type Direction } from "@/lib/workspace";
 import { presetLook, serializeLook } from "@/lib/avatar";
