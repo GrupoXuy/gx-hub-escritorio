@@ -32,7 +32,7 @@ export function useWorkspace() {
   }, []);
   useEffect(() => {
     void refresh();
-    const timer = setInterval(() => { if (!document.hidden) void refresh(); }, 4000);
+    const timer = setInterval(() => { if (!document.hidden) void refresh(); }, 2500);
     const visible = () => { if (!document.hidden) void refresh(); };
     document.addEventListener("visibilitychange", visible);
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", visible); };
