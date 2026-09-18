@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Video, VideoOff, Mic, MicOff, Headphones, ArrowUpRight, Users, ShieldCheck, LoaderCircle, MonitorUp, PhoneOff, UserPlus, Volume2, LockKeyhole, Minimize2, SwitchCamera } from "lucide-react";
-import { Modal, Avatar, , IconButton } from "@/components/ui";
+import { Modal, Avatar, IconButton } from "@/components/ui";
 import { Avatar3D } from "@/components/avatar-3d";
 import type { Member, Room } from "@/lib/workspace";
 import type { CallController, CallMode, DevicePreferences } from "@/hooks/use-call";
