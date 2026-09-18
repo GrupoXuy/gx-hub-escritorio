@@ -46,7 +46,7 @@ export function Avatar3D({ member, size = 48, own = false, showRing = false, isM
 
   return (
     <span
-      className={`gx-avatar3d gx-avatar3d-${action} gx-avatar3d-${direction} ${own ? "gx-avatar3d-own" : ""} ${showRing ? "gx-avatar3d-ring" : ""} ${isMoving ? "gx-avatar3d-moving" : ""}`}
+      className={`gx3d gx-avatar3d gx-avatar3d-${action} gx-avatar3d-${direction} ${own ? "gx-avatar3d-own" : ""} ${showRing ? "gx-avatar3d-ring" : ""} ${isMoving ? "gx-avatar3d-moving" : ""}`}
       style={style}
       aria-label={member.name ? `Avatar de ${member.name}` : "Avatar"}
     >
