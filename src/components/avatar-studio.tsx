@@ -48,7 +48,7 @@ export function AvatarStudio({
         <div className="stage-light" />
         <div className="stage-floor" />
         <Avatar3D
-          member={{ ...memberFor(look), action: preview, direction: view === "front" ? "dr" : view === "diagRight" ? "ur" : view === "diagLeft" ? "ul" : "ur" }}
+          member={{ ...memberFor(look), action: preview, direction: view === "front" ? "front" : view === "diagRight" ? "ur" : view === "diagLeft" ? "ul" : "back" }}
           size={148}
         />
         <div className="stage-tools" role="group" aria-label="Prévia do avatar">
