@@ -42,6 +42,8 @@ export function Avatar3D({ member, size = 48, own = false, showRing = false, isM
     "--gx-facing": left ? "-1" : "1",
     "--gx-depth": back ? ".96" : "1",
     "--gx-body-scale": female ? ".96" : "1",
+    "--gx-look-x": "0deg",
+    "--gx-look-y": "0deg",
   } as CSSProperties;
 
   return (
@@ -49,6 +51,17 @@ export function Avatar3D({ member, size = 48, own = false, showRing = false, isM
       className={`gx3d gx-avatar3d gx-avatar3d-${action} gx-avatar3d-${direction} ${own ? "gx-avatar3d-own" : ""} ${showRing ? "gx-avatar3d-ring" : ""} ${isMoving ? "gx-avatar3d-moving" : ""}`}
       style={style}
       aria-label={member.name ? `Avatar de ${member.name}` : "Avatar"}
+      onPointerMove={(event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+        const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+        event.currentTarget.style.setProperty("--gx-look-x", `${(x * 5).toFixed(2)}deg`);
+        event.currentTarget.style.setProperty("--gx-look-y", `${(y * -4).toFixed(2)}deg`);
+      }}
+      onPointerLeave={(event) => {
+        event.currentTarget.style.setProperty("--gx-look-x", "0deg");
+        event.currentTarget.style.setProperty("--gx-look-y", "0deg");
+      }}
     >
       <span className="gx3d-aura" />
       <span className="gx3d-ground" />
@@ -91,7 +104,7 @@ export function Avatar3DStyles() {
     .gx-avatar3d{position:relative;display:inline-block;width:var(--gx-size);height:var(--gx-size);flex:0 0 auto;perspective:420px;isolation:isolate;overflow:visible;filter:drop-shadow(0 5px 7px #0008)}
     .gx3d-ring{position:absolute;left:8%;right:8%;bottom:2%;height:13%;border:1px solid var(--gx-accent);border-radius:50%;box-shadow:0 0 0 2px #c7a66e22,0 0 12px #c7a66e33;z-index:0;pointer-events:none}.gx-avatar3d-own .gx3d-aura{opacity:1}.gx3d-aura{position:absolute;inset:4%;border-radius:50%;background:radial-gradient(circle,#d6b46a38 0,#d6b46a12 38%,transparent 72%);opacity:.8}
     .gx3d-ground{position:absolute;left:14%;right:14%;bottom:4%;height:9%;border-radius:50%;background:#0009;filter:blur(2px);transform:scaleX(.85)}
-    .gx3d-character{position:absolute;inset:1%;transform:scaleX(var(--gx-facing)) scale(var(--gx-depth)) scale(var(--gx-body-scale));transform-origin:50% 78%;animation:gx3d-idle 4s ease-in-out infinite;transition:transform .28s cubic-bezier(.22,.8,.25,1)}
+    .gx3d-character{position:absolute;inset:1%;transform:perspective(420px) rotateX(var(--gx-look-y)) rotateY(var(--gx-look-x)) scaleX(var(--gx-facing)) scale(var(--gx-depth)) scale(var(--gx-body-scale));transform-origin:50% 78%;animation:gx3d-idle 4s ease-in-out infinite;transition:transform .28s cubic-bezier(.22,.8,.25,1)}
     .gx3d-legs{position:absolute;left:34%;right:34%;bottom:15%;height:27%;display:flex;gap:7%;z-index:1}
     .gx3d-legs i{width:45%;border-radius:42% 42% 24% 24%;background:linear-gradient(90deg,#101215 0,#35383a 45%,#151719 100%);box-shadow:inset 2px 0 2px #fff2;transform-origin:50% 7%}
     .gx3d-shoes{position:absolute;left:27%;right:24%;bottom:8%;height:10%;z-index:4;display:flex;justify-content:space-between}
