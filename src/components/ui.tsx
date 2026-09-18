@@ -44,6 +44,8 @@ export function Avatar({
 }) {
   const photo = member.avatar && /^https?:\/\//.test(member.avatar) ? member.avatar : "";
   const avatarMember = { ...member, action: member.action || "idle", direction: member.direction || "dr" };
+  const lastSeenMs = member.lastSeen ? Date.now() - new Date(member.lastSeen).getTime() : Number.POSITIVE_INFINITY;
+  const presence = lastSeenMs > 60000 ? "offline" : (member.status || "available");
   return (
     <span
       className={`avatar ${photo ? "has-photo" : ""} ${className}`}
@@ -61,7 +63,7 @@ export function Avatar({
       ) : (
         <Avatar3D member={avatarMember} size={Math.max(15, Math.round(size * 0.94))} />
       )}
-      {status && <i className={`presence-dot ${member.status || "available"}`} />}
+      {status && <i className={`presence-dot ${presence}`} aria-label={presence === "offline" ? "Offline" : presence === "busy" ? "Em foco" : presence === "away" ? "Ausente" : "Disponível"} title={presence === "offline" ? "Offline" : presence === "busy" ? "Em foco" : presence === "away" ? "Ausente" : "Disponível"} />}
       {ring && <i className="avatar-ring" />}
     </span>
   );
