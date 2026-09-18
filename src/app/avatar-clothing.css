@@ -1,7 +1,7 @@
 /* GX Hub — acabamento visual das mangas e acessórios do avatar.
    Usa :has() para herdar o tipo de roupa do torso sem duplicar a árvore React. */
 
-.gx3d-arm{
+.gx3d-arms i{
   width:14%;
   height:31%;
   top:37%;
@@ -13,16 +13,16 @@
   transition:background .2s ease,width .2s ease,height .2s ease,border-radius .2s ease;
 }
 
-.gx3d:has(.outfit-suit) .gx3d-arm{
+.gx3d:has(.outfit-suit) .gx3d-arms i{
   background:linear-gradient(90deg,#090b0c,var(--gx-outfit) 50%,#171a1c);
   width:15%;
   height:32%;
   border-radius:28% 28% 38% 38%;
   border-left:1px solid #ffffff18;
 }
-.gx3d:has(.outfit-suit) .gx3d-arm::after,
-.gx3d:has(.outfit-blazer) .gx3d-arm::after,
-.gx3d:has(.outfit-shirt) .gx3d-arm::after{
+.gx3d:has(.outfit-suit) .gx3d-arms i::after,
+.gx3d:has(.outfit-blazer) .gx3d-arms i::after,
+.gx3d:has(.outfit-shirt) .gx3d-arms i::after{
   content:"";
   position:absolute;
   bottom:-3%;
@@ -34,13 +34,13 @@
   box-shadow:0 1px 2px #0005;
 }
 
-.gx3d:has(.outfit-blazer) .gx3d-arm{
+.gx3d:has(.outfit-blazer) .gx3d-arms i{
   background:linear-gradient(90deg,var(--gx-outfit-dark),var(--gx-outfit-light) 48%,var(--gx-outfit-dark));
   width:15%;
   height:32%;
   border-radius:30% 30% 40% 40%;
 }
-.gx3d:has(.outfit-blazer) .gx3d-arm::before{
+.gx3d:has(.outfit-blazer) .gx3d-arms i::before{
   content:"";
   position:absolute;
   top:4%;
@@ -51,21 +51,21 @@
   transform:rotate(4deg);
 }
 
-.gx3d:has(.outfit-shirt) .gx3d-arm{
+.gx3d:has(.outfit-shirt) .gx3d-arms i{
   background:linear-gradient(90deg,var(--gx-outfit-dark),var(--gx-outfit-light) 50%,var(--gx-outfit));
   width:14%;
   height:30%;
   border-radius:27% 27% 40% 40%;
 }
-.gx3d:has(.outfit-shirt) .gx3d-arm::after{background:#f1eee6}
+.gx3d:has(.outfit-shirt) .gx3d-arms i::after{background:#f1eee6}
 
-.gx3d:has(.outfit-hoodie) .gx3d-arm{
+.gx3d:has(.outfit-hoodie) .gx3d-arms i{
   background:linear-gradient(90deg,var(--gx-outfit-dark),var(--gx-outfit) 50%,var(--gx-outfit-dark));
   width:17%;
   height:34%;
   border-radius:38% 38% 45% 45%;
 }
-.gx3d:has(.outfit-hoodie) .gx3d-arm::after{
+.gx3d:has(.outfit-hoodie) .gx3d-arms i::after{
   content:"";
   position:absolute;
   bottom:-2%;
@@ -76,14 +76,14 @@
   background:var(--gx-outfit-dark);
 }
 
-.gx3d:has(.outfit-tee) .gx3d-arm{
+.gx3d:has(.outfit-tee) .gx3d-arms i{
   background:linear-gradient(90deg,var(--gx-outfit-dark),var(--gx-outfit) 50%,var(--gx-outfit-light));
   width:16%;
   height:27%;
   top:39%;
   border-radius:30% 30% 43% 43%;
 }
-.gx3d:has(.outfit-tee) .gx3d-arm::after{
+.gx3d:has(.outfit-tee) .gx3d-arms i::after{
   content:"";
   position:absolute;
   bottom:-27%;
@@ -95,8 +95,8 @@
 }
 
 /* O braço levantado mantém a manga até perto do punho. */
-.gx3d-arm.raised,
-.gx3d-arm.wave-arm{transform-origin:50% 8%;}
+.gx3d-arms i.raised,
+.gx3d-arms i.wave-arm{transform-origin:50% 8%;}
 
 /* Detalhes de acessórios: mais legíveis em tamanhos pequenos. */
 .gx3d-glasses{box-shadow:0 0 0 1px #ffffff38,0 1px 2px #0008;}
@@ -106,9 +106,9 @@
 .gx3d-cap{box-shadow:inset 0 1px 2px #fff2,0 2px 3px #0008;}
 
 /* Costura/cuff visível em roupas sociais. */
-.gx3d:has(.outfit-suit) .gx3d-arm::before,
-.gx3d:has(.outfit-blazer) .gx3d-arm::before,
-.gx3d:has(.outfit-shirt) .gx3d-arm::before{
+.gx3d:has(.outfit-suit) .gx3d-arms i::before,
+.gx3d:has(.outfit-blazer) .gx3d-arms i::before,
+.gx3d:has(.outfit-shirt) .gx3d-arms i::before{
   content:"";
   position:absolute;
   bottom:11%;
@@ -120,5 +120,5 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  .gx3d-arm{transition:none}
+  .gx3d-arms i{transition:none}
 }
