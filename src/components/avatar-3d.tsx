@@ -48,7 +48,7 @@ export function Avatar3D({ member, size = 48, own = false, showRing = false, isM
 
   return (
     <span
-      className={`gx3d gx-avatar3d gx-avatar3d-${action} gx-avatar3d-${direction} ${own ? "gx-avatar3d-own" : ""} ${showRing ? "gx-avatar3d-ring" : ""} ${isMoving ? "gx-avatar3d-moving" : ""}`}
+      className={`gx3d gx-avatar3d gx-avatar3d-${action} gx-avatar3d-${direction} ${female ? "gx-avatar3d-female" : "gx-avatar3d-male"} ${own ? "gx-avatar3d-own" : ""} ${showRing ? "gx-avatar3d-ring" : ""} ${isMoving ? "gx-avatar3d-moving" : ""}`}
       style={style}
       aria-label={member.name ? `Avatar de ${member.name}` : "Avatar"}
       onPointerMove={(event) => {
@@ -110,6 +110,7 @@ export function Avatar3DStyles() {
     .gx3d-shoes{position:absolute;left:27%;right:24%;bottom:8%;height:10%;z-index:4;display:flex;justify-content:space-between}
     .gx3d-shoes i{width:39%;border-radius:35% 55% 22% 28%;background:linear-gradient(160deg,#fff,#d9dce0 60%,#8d9298);box-shadow:inset 0 -2px 2px #7776,0 2px 3px #0008}
     .gx3d-shoes i:after{content:"";display:block;width:78%;height:18%;margin:72% auto 0;background:#253a59;border-radius:50%}
+    .gx-avatar3d-female .gx3d-jacket{left:23%;right:23%;border-radius:28% 28% 14% 14%}.gx-avatar3d-female .gx3d-head{left:28%;right:28%;height:43%;top:8%}.gx-avatar3d-female .gx3d-neck{width:14%;left:43%}.gx-avatar3d-female .gx3d-arms i{width:9%}.gx-avatar3d-female .gx3d-legs{left:35%;right:35%;gap:8%}
     .gx3d-jacket{position:absolute;left:20%;right:20%;bottom:30%;height:39%;border-radius:25% 25% 13% 13%;background:linear-gradient(105deg,var(--gx-outfit-dark),var(--gx-outfit) 46%,var(--gx-outfit-dark));box-shadow:inset 4px 0 5px #fff2,0 4px 7px #0008;z-index:2;overflow:hidden;transition:background .2s,border-radius .2s}
     .outfit-suit{background:linear-gradient(105deg,var(--gx-outfit-dark),var(--gx-outfit) 48%,var(--gx-outfit-dark))}
     .outfit-blazer{background:linear-gradient(105deg,var(--gx-outfit-dark),var(--gx-outfit-light) 48%,var(--gx-outfit-dark))}
