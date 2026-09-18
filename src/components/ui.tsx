@@ -83,6 +83,7 @@ export type AvatarLike = {
   micEnabled?: boolean;
   isAdmin?: boolean;
   avatarLook?: string | null;
+  lastSeen?: string | null;
 };
 
 /**
