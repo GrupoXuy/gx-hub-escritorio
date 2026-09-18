@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Check, Dice5, RotateCcw, Sparkles } from "lucide-react";
 import { Avatar3D } from "@/components/avatar-3d";
 import { AVATAR_COLORS } from "@/lib/workspace";
@@ -10,7 +10,7 @@ import {
 } from "@/lib/avatar";
 
 type Preview = "idle" | "sit" | "wave";
-type View = "front" | "back";
+type View = "front" | "diagRight" | "back" | "diagLeft";
 
 /**
  * Estúdio do avatar: palco com o avatar 3D grande, previas ao vivo de cada opção
@@ -48,11 +48,11 @@ export function AvatarStudio({
         <div className="stage-light" />
         <div className="stage-floor" />
         <Avatar3D
-          member={{ ...memberFor(look), action: preview, direction: view === "back" ? "ur" : "dr" }}
+          member={{ ...memberFor(look), action: preview, direction: view === "front" ? "dr" : view === "diagRight" ? "ur" : view === "diagLeft" ? "ul" : "ur" }}
           size={148}
         />
         <div className="stage-tools" role="group" aria-label="Prévia do avatar">
-          {([["front", "Frente"], ["back", "Costas"]] as [View, string][]).map(([id, label]) => (
+          {([["front", "Frente"], ["diagRight", "↗"], ["back", "Costas"], ["diagLeft", "↖"]] as [View, string][]).map(([id, label]) => (
             <button key={id} type="button" className={view === id ? "on" : ""} onClick={() => setView(id)}>{label}</button>
           ))}
           <i />
@@ -166,7 +166,7 @@ export function AvatarStudio({
   );
 }
 
-function StudioRow({ label, children }: { label: string; children: React.ReactNode }) {
+function StudioRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="studio-row">
       <span className="studio-row-label">{label}</span>
