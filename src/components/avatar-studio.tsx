@@ -22,12 +22,14 @@ export function AvatarStudio({
   gender,
   onChange,
   onColor,
+  onGender,
 }: {
   look: AvatarLook;
   color: string;
   gender?: string | null;
   onChange: (look: AvatarLook) => void;
   onColor: (color: string) => void;
+  onGender?: (gender: string) => void;
 }) {
   const [tab, setTab] = useState<"corpo" | "cabelo" | "roupa" | "extras">("corpo");
   const [preview, setPreview] = useState<Preview>("idle");
@@ -74,6 +76,16 @@ export function AvatarStudio({
 
         {tab === "corpo" && (
           <>
+            {onGender && (
+              <StudioRow label="Modelo do avatar">
+                {([["male", "Masculino"], ["female", "Feminino"]] as [string, string][]).map(([value, label]) => (
+                  <button key={value} type="button" className={gender === value ? "chip-option on" : "chip-option"} aria-pressed={gender === value} onClick={() => onGender(value)}>
+                    {gender === value && <Check size={12} />}
+                    {label}
+                  </button>
+                ))}
+              </StudioRow>
+            )}
             <StudioRow label="Tom de pele">
               {SKIN_TONES.map((tone, index) => (
                 <SpriteOption key={tone.name} label={tone.name} selected={look.skin === index} member={memberFor({ ...look, skin: index })} onClick={() => pick({ skin: index })} />
