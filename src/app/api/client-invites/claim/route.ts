@@ -29,7 +29,17 @@ export async function POST(request: Request) {
         .where(and(eq(clientInvites.id, token), isNull(clientInvites.usedAt), gt(clientInvites.expiresAt, new Date())))
         .limit(1);
       if (!row) return { error: "Este convite já foi utilizado, expirou ou não existe." } as const;
-      const [lead] = await tx.insert(leads).values({ name, gender, whatsapp, email, clientInviteId: row.invite.id, meetingId: row.meeting.id }).returning();
+      const [lead] = await tx.insert(leads).values({
+        ownerId: row.invite.createdBy,
+        source: "client-invite",
+        name,
+        companyName: "",
+        gender,
+        whatsapp,
+        email,
+        clientInviteId: row.invite.id,
+        meetingId: row.meeting.id,
+      }).returning();
       const [guest] = await tx.insert(users).values({
         id: crypto.randomUUID(), name, role: "Cliente convidado", company: "Visitante",
         avatar: "", color: gender === "female" ? "#b29bc3" : "#7295a1",
