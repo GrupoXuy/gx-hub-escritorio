@@ -51,6 +51,8 @@ const DDL_STATEMENTS = [
   `ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS website text`,
   `UPDATE gx_leads l SET owner_id = ci.created_by FROM gx_client_invites ci WHERE l.client_invite_id = ci.id AND l.owner_id IS NULL`,
   `UPDATE gx_leads l SET owner_id = m.organizer_id FROM gx_meetings m WHERE l.meeting_id = m.id AND l.owner_id IS NULL`,
+  `ALTER TABLE gx_leads ALTER COLUMN client_invite_id DROP NOT NULL`,
+  `ALTER TABLE gx_leads ALTER COLUMN meeting_id DROP NOT NULL`,
   `ALTER TABLE gx_leads ALTER COLUMN owner_id SET NOT NULL`,
   `CREATE INDEX IF NOT EXISTS gx_leads_owner_id_idx ON gx_leads (owner_id)`,
   `CREATE INDEX IF NOT EXISTS gx_leads_source_idx ON gx_leads (source)`,
