@@ -88,11 +88,16 @@ export const clientInvites = pgTable("gx_client_invites", {
 
 export const leads = pgTable("gx_leads", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  ownerId: text("owner_id").notNull().references(() => users.id),
+  source: text("source").notNull().default("client-invite"),
   name: text("name").notNull(),
-  gender: text("gender").notNull(),
+  companyName: text("company_name").notNull().default(""),
+  gender: text("gender").notNull().default(""),
   whatsapp: text("whatsapp").notNull(),
-  email: text("email").notNull(),
-  clientInviteId: text("client_invite_id").notNull().references(() => clientInvites.id),
-  meetingId: text("meeting_id").notNull().references(() => meetings.id),
+  email: text("email").notNull().default(""),
+  instagram: text("instagram"),
+  website: text("website"),
+  clientInviteId: text("client_invite_id").references(() => clientInvites.id),
+  meetingId: text("meeting_id").references(() => meetings.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
