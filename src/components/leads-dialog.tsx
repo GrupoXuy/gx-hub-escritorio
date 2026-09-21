@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, CalendarDays, Copy, Download, Globe2, Instagram, LoaderCircle, Mail, MessageCircle, Search, Users, X } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Copy, Download, Globe2, LoaderCircle, Mail, MessageCircle, Search, Users, X } from "lucide-react";
 import { Modal, EmptyState } from "@/components/ui";
+import { InstagramGlyph } from "@/components/ecosystem-nav";
 import { api } from "@/lib/workspace";
 
 type Lead = {
@@ -143,7 +144,7 @@ export function LeadsDialog({ notify, onClose }: { notify: (message: string) => 
                     <MessageCircle size={14} /><span>WhatsApp</span><ArrowUpRight size={11} />
                   </a>}
                   {ig && <a className="lead-channel" href={ig} target="_blank" rel="noopener noreferrer" aria-label={`Abrir Instagram de ${lead.name}`} title="Instagram">
-                    <Instagram size={14} /><span>Instagram</span><ArrowUpRight size={11} />
+                    <InstagramGlyph size={14} /><span>Instagram</span><ArrowUpRight size={11} />
                   </a>}
                   {site && <a className="lead-channel" href={site} target="_blank" rel="noopener noreferrer" aria-label={`Abrir site de ${lead.name}`} title="Site">
                     <Globe2 size={14} /><span>Site</span><ArrowUpRight size={11} />
