@@ -370,3 +370,29 @@
 .map-person.is-seated .pixel-avatar-wrapper.has-ring:before,
 .map-person.is-seated .avatar-ground-shadow,
 .map-person.is-seated .avatar-halo{opacity:0!important;animation:none!important}
+
+/* ===== Base individual de Leads / GX Radar ===== */
+.sidebar-leads{border-color:#665437;background:#292317;color:#d7bf8c}
+.sidebar-leads:hover{background:#3a3020;border-color:#c7a66e;color:#ecd8ad}
+.leads-list{display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow:auto;padding-right:2px}
+.lead-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px;border:1px solid #303334;border-radius:8px;background:#1b1d1e}
+.lead-row:hover{border-color:#514630;background:#202223}
+.lead-avatar{width:34px;height:34px;display:grid;place-items:center;border-radius:7px;border:1px solid #4a4130;background:#2b271e;color:#c9ad76}
+.lead-info{min-width:0;display:flex;flex-direction:column;gap:4px}
+.lead-info>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.7px;font-weight:650;color:#e0dfd4}
+.lead-person-name{font-size:9.5px;color:#8f9697;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lead-meta{display:flex;align-items:center;flex-wrap:wrap;gap:7px;color:#7e8587;font-size:8.8px}
+.lead-meta time{color:#707779;font-variant-numeric:tabular-nums}
+.lead-source-chip{display:inline-flex;align-items:center;padding:3px 6px;border:1px solid #45484a;border-radius:10px;background:#242728;color:#9ca2a2;font-size:7.8px;font-weight:650;letter-spacing:.3px}
+.lead-source-chip.radar{border-color:#6b5938;background:#312817;color:#d5b979}
+.lead-contact{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap}
+.lead-channel{display:inline-flex;align-items:center;gap:5px;height:29px;padding:0 8px;border:1px solid #3a3c3d;border-radius:5px;background:#202223;color:#aeb1b1;font-size:8.9px;font-weight:600;white-space:nowrap}
+.lead-channel:hover{border-color:#7e6b48;background:#2b2b27;color:#e1d4b6;transform:translateY(-1px)}
+.lead-channel.whatsapp{border-color:#4b624f;background:#202a23;color:#bdd1bf}
+.lead-channel.whatsapp:hover{border-color:#7fa884;background:#28372c}
+.lead-channel svg:last-child{opacity:.65}
+@media(max-width:760px){
+  .lead-row{grid-template-columns:34px minmax(0,1fr)}
+  .lead-contact{grid-column:2;justify-content:flex-start}
+  .lead-channel{flex:0 0 auto}
+}
