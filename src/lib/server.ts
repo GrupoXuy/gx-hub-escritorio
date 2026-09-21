@@ -43,7 +43,17 @@ const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS gx_invitations (id text PRIMARY KEY, created_by text NOT NULL REFERENCES gx_users(id), expires_at timestamptz NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS gx_client_invites (id text PRIMARY KEY DEFAULT gen_random_uuid(), created_by text NOT NULL REFERENCES gx_users(id), meeting_id text NOT NULL REFERENCES gx_meetings(id), expires_at timestamptz NOT NULL, used_at timestamptz, guest_user_id text, created_at timestamptz NOT NULL DEFAULT now())`,
   `CREATE INDEX IF NOT EXISTS gx_client_invites_token_idx ON gx_client_invites (id, used_at, expires_at)`,
-  `CREATE TABLE IF NOT EXISTS gx_leads (id text PRIMARY KEY DEFAULT gen_random_uuid(), name text NOT NULL, gender text NOT NULL, whatsapp text NOT NULL, email text NOT NULL, client_invite_id text NOT NULL REFERENCES gx_client_invites(id), meeting_id text NOT NULL REFERENCES gx_meetings(id), created_at timestamptz NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS gx_leads (id text PRIMARY KEY DEFAULT gen_random_uuid(), owner_id text NOT NULL REFERENCES gx_users(id), source text NOT NULL DEFAULT 'client-invite', name text NOT NULL, company_name text NOT NULL DEFAULT '', gender text NOT NULL DEFAULT '', whatsapp text NOT NULL, email text NOT NULL DEFAULT '', instagram text, website text, client_invite_id text REFERENCES gx_client_invites(id), meeting_id text REFERENCES gx_meetings(id), created_at timestamptz NOT NULL DEFAULT now())`,
+  `ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS owner_id text`,
+  `ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'client-invite'`,
+  `ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS company_name text NOT NULL DEFAULT ''`,
+  `ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS instagram text`,
+  `ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS website text`,
+  `UPDATE gx_leads l SET owner_id = ci.created_by FROM gx_client_invites ci WHERE l.client_invite_id = ci.id AND l.owner_id IS NULL`,
+  `UPDATE gx_leads l SET owner_id = m.organizer_id FROM gx_meetings m WHERE l.meeting_id = m.id AND l.owner_id IS NULL`,
+  `ALTER TABLE gx_leads ALTER COLUMN owner_id SET NOT NULL`,
+  `CREATE INDEX IF NOT EXISTS gx_leads_owner_id_idx ON gx_leads (owner_id)`,
+  `CREATE INDEX IF NOT EXISTS gx_leads_source_idx ON gx_leads (source)`,
   `CREATE INDEX IF NOT EXISTS gx_leads_created_at_idx ON gx_leads (created_at DESC)`,
 ];
 
