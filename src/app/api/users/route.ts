@@ -109,12 +109,13 @@ export async function DELETE(request: Request) {
       // cannot fail on foreign-key constraints or leave orphaned history.
       await tx.execute(sql`
         DELETE FROM gx_leads
-        WHERE client_invite_id IN (
-          SELECT id FROM gx_client_invites
-          WHERE created_by = ${id}
-             OR meeting_id IN (SELECT id FROM gx_meetings WHERE organizer_id = ${id})
-        )
-        OR meeting_id IN (SELECT id FROM gx_meetings WHERE organizer_id = ${id})
+        WHERE owner_id = ${id}
+           OR client_invite_id IN (
+            SELECT id FROM gx_client_invites
+            WHERE created_by = ${id}
+               OR meeting_id IN (SELECT id FROM gx_meetings WHERE organizer_id = ${id})
+          )
+           OR meeting_id IN (SELECT id FROM gx_meetings WHERE organizer_id = ${id})
       `);
       await tx.delete(clientInvites).where(
         or(
