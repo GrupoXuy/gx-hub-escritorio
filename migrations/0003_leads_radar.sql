@@ -24,6 +24,8 @@ WHERE l.meeting_id = m.id
 
 ALTER TABLE gx_leads ALTER COLUMN client_invite_id DROP NOT NULL;
 ALTER TABLE gx_leads ALTER COLUMN meeting_id DROP NOT NULL;
+ALTER TABLE gx_leads ALTER COLUMN client_invite_id DROP NOT NULL;
+ALTER TABLE gx_leads ALTER COLUMN meeting_id DROP NOT NULL;
 ALTER TABLE gx_leads ALTER COLUMN owner_id SET NOT NULL;
 
 DO $$
