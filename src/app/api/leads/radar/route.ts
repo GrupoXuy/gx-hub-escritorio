@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { leads, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { emailEquals, fail, getMember, seedWorkspace, validEmail, validProfileText } from "@/lib/server";
 
 export const dynamic = "force-dynamic";
@@ -56,22 +56,39 @@ export async function POST(request: Request) {
       return Response.json({ error: "Email do lead inválido." }, { status: 400 });
     }
 
-    const [lead] = await db.insert(leads).values({
-      ownerId: owner.id,
-      source: "gx-radar",
-      name,
-      companyName,
-      gender: textOrEmpty(body.gender, 20),
-      whatsapp,
-      email,
-      instagram: instagram || null,
-      website: website || null,
-      clientInviteId: null,
-      meetingId: null,
-    }).returning();
+    // Serializa la ingestão por responsável para impedir duplicatas em reenvios concorrentes.
+    const result = await db.transaction(async tx => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`gx-radar:${owner.id}`}))`);
+      const identity = [
+        whatsapp ? eq(leads.whatsapp, whatsapp) : undefined,
+        email ? eq(leads.email, email) : undefined,
+      ].filter((condition): condition is NonNullable<typeof condition> => Boolean(condition));
+      const [existing] = await tx.select().from(leads).where(and(
+        eq(leads.ownerId, owner.id),
+        eq(leads.source, "gx-radar"),
+        or(...identity),
+      )).limit(1);
+      if (existing) return { lead: existing, duplicate: true };
+      const [created] = await tx.insert(leads).values({
+        ownerId: owner.id,
+        source: "gx-radar",
+        name,
+        companyName,
+        gender: textOrEmpty(body.gender, 20),
+        whatsapp,
+        email,
+        instagram: instagram || null,
+        website: website || null,
+        clientInviteId: null,
+        meetingId: null,
+      }).returning();
+      return { lead: created, duplicate: false };
+    });
+    const { lead, duplicate } = result;
 
     return Response.json({
       ok: true,
+      duplicate,
       lead: {
         id: lead.id,
         ownerId: lead.ownerId,
@@ -84,7 +101,7 @@ export async function POST(request: Request) {
         website: lead.website,
         createdAt: lead.createdAt,
       },
-    }, { status: 201 });
+    }, { status: duplicate ? 200 : 201 });
   } catch (error) {
     return fail(error);
   }
