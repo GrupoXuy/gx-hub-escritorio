@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const base = process.env.GX_TEST_BASE_URL || process.env.TEST_BASE_URL || 'http://127.0.0.1:3000';
@@ -10,8 +10,14 @@ if (!email || !password) {
   process.exit(1);
 }
 mkdirSync('artifacts', { recursive: true });
-const testUsers = [];
+const testUsers = existsSync('artifacts/test-users.json')
+  ? (JSON.parse(readFileSync('artifacts/test-users.json', 'utf8'))).filter(id => id !== 'henrique-senna')
+  : [];
+const testLeadEmails = existsSync('artifacts/test-leads.json')
+  ? JSON.parse(readFileSync('artifacts/test-leads.json', 'utf8'))
+  : [];
 const saveUsers = () => writeFileSync('artifacts/test-users.json', JSON.stringify(testUsers));
+const saveTestLeadEmails = () => writeFileSync('artifacts/test-leads.json', JSON.stringify(testLeadEmails));
 const track = (id) => { if (id && id !== 'henrique-senna' && !testUsers.includes(id)) { testUsers.push(id); saveUsers(); } };
 
 const browser = await chromium.launch({
@@ -199,15 +205,21 @@ try {
   });
   assert.equal(guestMeetingResponse.status(), 201);
   const guestMeeting = await guestMeetingResponse.json();
+  const guestName = `Cliente Teste ${Date.now()}`;
+  const guestEmail = `guest.test.${Date.now()}@example.com`;
+  let guestMeetingDeleted = false;
   try {
     const inviteResponse = await adminApi.post(`${base}/api/client-invites`, { data: { meetingId: guestMeeting.id } });
     assert.equal(inviteResponse.status(), 201);
     const invite = await inviteResponse.json();
     const guestContext = await newContext();
     const guestClaimResponse = await guestContext.request.post(`${base}/api/client-invites/claim`, {
-      data: { token: invite.token, name: `Cliente Teste ${Date.now()}`, gender: 'male', whatsapp: '09912345678', email: `guest.test.${Date.now()}@example.com` },
+      data: { token: invite.token, name: guestName, gender: 'male', whatsapp: '09912345678', email: guestEmail },
     });
     assert.equal(guestClaimResponse.status(), 201);
+    if (!testLeadEmails.includes(guestEmail)) testLeadEmails.push(guestEmail);
+    saveTestLeadEmails();
+
     const guestStateResponse = await guestContext.request.get(`${base}/api/guest-office`);
     assert.equal(guestStateResponse.status(), 200);
     const guestState = await guestStateResponse.json();
@@ -215,10 +227,20 @@ try {
     assert.ok(guestState.members.every((member) => member.roomId !== 'diretoria'), 'Guest receives no boardroom presence');
     const guestBoardroomAttempt = await guestContext.request.patch(`${base}/api/guest-office`, { data: { roomId: 'diretoria' } });
     assert.equal(guestBoardroomAttempt.status(), 400, 'Guest cannot move into the boardroom');
+
+    const cancelResponse = await adminApi.delete(`${base}/api/meetings?id=${encodeURIComponent(guestMeeting.id)}`);
+    assert.equal(cancelResponse.status(), 200, 'Meeting can be cancelled by its organizer');
+    guestMeetingDeleted = true;
+    const afterCancelResponse = await adminApi.get(`${base}/api/leads`);
+    assert.equal(afterCancelResponse.status(), 200);
+    const afterCancelData = await afterCancelResponse.json();
+    const retainedLead = afterCancelData.leads.find((lead) => lead.email === guestEmail);
+    assert.ok(retainedLead, 'Captured contact remains in the CRM after meeting cancellation');
+    assert.equal(retainedLead.meetingTitle, null, 'Cancelled meeting is detached from the retained lead');
   } finally {
-    await adminApi.delete(`${base}/api/meetings?id=${encodeURIComponent(guestMeeting.id)}`);
+    if (!guestMeetingDeleted) await adminApi.delete(`${base}/api/meetings?id=${encodeURIComponent(guestMeeting.id)}`);
   }
-  console.log('PASS: boardroom API guards, invite isolation, and guest floor isolation');
+  console.log('PASS: boardroom API guards, guest floor isolation, and lead retention after cancellation');
 
   // 7. Test Chat between Henrique and User B
   const testMsg = `Mensagem de sincronização ${Date.now()}`;

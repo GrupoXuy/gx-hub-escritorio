@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { meetings, clientInvites, leads, users } from "@/db/schema";
-import { and, eq, gt, lt, sql, inArray } from "drizzle-orm";
+import { and, eq, gt, lt, sql, inArray, or } from "drizzle-orm";
 import { getMember, fail, isHenriqueAdmin } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
 export async function POST(request: Request) {
@@ -41,7 +41,12 @@ export async function DELETE(request: Request) {
       const invites = await tx.select({ id: clientInvites.id, guestUserId: clientInvites.guestUserId }).from(clientInvites).where(eq(clientInvites.meetingId, id));
       const inviteIds = invites.map(item => item.id);
       const guestIds = invites.map(item => item.guestUserId).filter((value): value is string => Boolean(value));
-      if (inviteIds.length) await tx.delete(leads).where(inArray(leads.clientInviteId, inviteIds));
+      // Leads are CRM records, not disposable meeting artifacts. Detach them before
+      // removing the meeting/invite so contact details survive cancellation.
+      const affectedLeads = inviteIds.length
+        ? or(eq(leads.meetingId, id), inArray(leads.clientInviteId, inviteIds))
+        : eq(leads.meetingId, id);
+      await tx.update(leads).set({ meetingId: null, clientInviteId: null }).where(affectedLeads);
       if (inviteIds.length) await tx.delete(clientInvites).where(inArray(clientInvites.id, inviteIds));
       if (guestIds.length) await tx.delete(users).where(inArray(users.id, guestIds));
       await tx.delete(meetings).where(eq(meetings.id, id));
