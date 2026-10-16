@@ -67,7 +67,7 @@ export function LeadsDialog({ notify, onClose }: { notify: (message: string) => 
     const rows = [
       ["Origem", "Empresa", "Nome", "WhatsApp", "Email", "Instagram", "Site", "Reunião", "Data"],
       ...leads.map(l => [
-        l.source === "gx-radar" ? "GX Radar" : "Convite",
+        l.source === "client-invite" ? "Convite" : "Outro contato",
         l.companyName,
         l.name,
         l.whatsapp,
@@ -98,7 +98,7 @@ export function LeadsDialog({ notify, onClose }: { notify: (message: string) => 
 
   return (
     <Modal title="Leads" eyebrow="SUA BASE DE CLIENTES" onClose={onClose} wide>
-      <p className="modal-description">Clientes captados pelo GX Radar e contatos gerados por reuniões ficam aqui, separados das empresas do Ecossistema Grupo X. Cada usuário visualiza somente a própria base.</p>
+      <p className="modal-description">Os contatos fornecidos por convidados do escritório ficam aqui, separados das empresas do Ecossistema Grupo X. Cada usuário visualiza somente a própria base.</p>
 
       <div className="leads-toolbar">
         <label className="search-field users-search">
@@ -133,7 +133,7 @@ export function LeadsDialog({ notify, onClose }: { notify: (message: string) => 
                   <strong>{lead.companyName || lead.name}</strong>
                   {lead.companyName && <span className="lead-person-name">{lead.name}</span>}
                   <span className="lead-meta">
-                    {lead.source === "gx-radar" ? <b className="lead-source-chip radar">GX Radar</b> : <b className="lead-source-chip">Convite</b>}
+                    {lead.source === "client-invite" ? <b className="lead-source-chip">Convite</b> : <b className="lead-source-chip">Outro contato</b>}
                     {lead.meetingTitle && <><CalendarDays size={12} />{lead.meetingTitle}</>}
                     <time>{new Date(lead.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time>
                   </span>
@@ -161,11 +161,11 @@ export function LeadsDialog({ notify, onClose }: { notify: (message: string) => 
         <EmptyState
           icon={<Users size={26} />}
           title="Nenhum lead na sua base"
-          description="Quando o GX Radar enviar um cliente para o seu usuário, ele aparecerá aqui com os canais disponíveis."
+          description="Quando seus convidados compartilharem dados de contato, eles aparecerão aqui com os canais disponíveis."
         />
       )}
 
-      <p className="modal-footnote">Os leads do GX Radar ficam separados das empresas do ecossistema. <button className="text-link" onClick={onClose}><X size={12} />Fechar</button></p>
+      <p className="modal-footnote">Esta base fica separada das empresas do ecossistema e vinculada ao seu usuário. <button className="text-link" onClick={onClose}><X size={12} />Fechar</button></p>
     </Modal>
   );
 }
