@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { and, asc, eq, gt, or } from "drizzle-orm";
+import { and, asc, eq, gt, ne, or } from "drizzle-orm";
 import { fail, publicMember, seedWorkspace } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
 
@@ -36,13 +36,23 @@ export async function GET() {
     await seedWorkspace();
     const guest = await getGuest();
     if (!guest) return unauthorized();
-    // O GET também é o batimento de presença na vista do escritório.
-    const [me] = await db.update(users).set({ lastSeen: new Date() }).where(eq(users.id, guest.id)).returning();
-    const members = await db.select().from(users).where(and(eq(users.isDemo, false), or(gt(users.lastSeen, new Date(Date.now() - 45000)), eq(users.id, me.id)))).orderBy(asc(users.name));
+    // Corrige sessões legadas que tenham entrado na diretoria por um convite antigo.
+    const guestPatch: Partial<typeof users.$inferInsert> = { lastSeen: new Date() };
+    if (guest.roomId === "diretoria") {
+      Object.assign(guestPatch, { roomId: "recepcao", callRoom: null, micEnabled: false, cameraEnabled: false });
+    }
+    const [me] = await db.update(users).set(guestPatch).where(and(eq(users.id, guest.id), eq(users.isGuest, true))).returning();
+    if (!me) return unauthorized();
+    // Convidados não recebem metadados nem presença de pessoas da Sala da diretoria.
+    const members = await db.select().from(users).where(and(
+      eq(users.isDemo, false),
+      ne(users.roomId, "diretoria"),
+      or(gt(users.lastSeen, new Date(Date.now() - 45000)), eq(users.id, me.id))
+    )).orderBy(asc(users.name));
     return Response.json({
       me: publicMember(me),
       members: members.map(publicMember),
-      rooms: ROOM_DATA,
+      rooms: ROOM_DATA.filter(room => room.id !== "diretoria"),
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return fail(error); }
 }

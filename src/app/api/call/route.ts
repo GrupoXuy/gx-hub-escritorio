@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { users, signals } from "@/db/schema";
 import { and, eq, gt, asc, or, lt, sql } from "drizzle-orm";
-import { getCallMember, fail, publicMember } from "@/lib/server";
+import { getCallMember, fail, publicMember, isHenriqueAdmin } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (body.action !== "join") return Response.json({ error: "Ação inválida." }, { status: 400 });
     const room = ROOM_DATA.find(r => r.id === body.roomId);
     if (!room) return Response.json({ error: "Sala não encontrada." }, { status: 404 });
-    if (room.id === "diretoria" && !me.isAdmin) return Response.json({ error: "A Sala da diretoria é exclusiva para administradores." }, { status: 403 });
+    if (room.id === "diretoria" && !isHenriqueAdmin(me)) return Response.json({ error: "A Sala da diretoria é exclusiva para Henrique Senna." }, { status: 403 });
     const participants = await db.select().from(users).where(and(eq(users.callRoom, room.id), gt(users.lastSeen, new Date(Date.now() - 25000)), eq(users.isDemo, false), or(eq(users.isGuest, false), sql`${users.guestExpiresAt} > now()`)));
     if (participants.filter(p => p.id !== me.id).length >= room.capacity) return Response.json({ error: "Esta sala está cheia. Escolha outro ambiente." }, { status: 409 });
     await db.delete(signals).where(or(eq(signals.toId, me.id), eq(signals.fromId, me.id), lt(signals.createdAt, new Date(Date.now() - 3600000))));
