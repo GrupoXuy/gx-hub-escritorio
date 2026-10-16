@@ -14,9 +14,16 @@ export async function GET() {
       return Response.json({ needsAuth: true, users: [], inviteRequired: true }, { status: 401, headers: { "Cache-Control": "no-store" } });
     }
     const [me] = await db.update(users).set({ lastSeen: new Date() }).where(eq(users.id, session.id)).returning();
+    const isPrivateRoomAuthorized = isHenriqueAdmin(me);
     const [members, team, roomList, chat, events] = await Promise.all([
-      db.select().from(users).where(and(eq(users.isDemo, false), or(gt(users.lastSeen, new Date(Date.now() - 45000)), eq(users.id, me.id)))).orderBy(asc(users.name)),
-      db.select().from(users).where(eq(users.isDemo, false)).orderBy(asc(users.name)),
+      db.select().from(users).where(isPrivateRoomAuthorized
+        ? and(eq(users.isDemo, false), or(gt(users.lastSeen, new Date(Date.now() - 45000)), eq(users.id, me.id)))
+        : and(eq(users.isDemo, false), ne(users.roomId, "diretoria"), or(gt(users.lastSeen, new Date(Date.now() - 45000)), eq(users.id, me.id)))
+      ).orderBy(asc(users.name)),
+      db.select().from(users).where(isPrivateRoomAuthorized
+        ? eq(users.isDemo, false)
+        : and(eq(users.isDemo, false), ne(users.roomId, "diretoria"))
+      ).orderBy(asc(users.name)),
       db.select().from(rooms),
       db.select({ id: messages.id, senderId: messages.senderId, roomId: messages.roomId, content: messages.content, createdAt: messages.createdAt, sender: users }).from(messages).innerJoin(users, eq(messages.senderId, users.id)).where(isHenriqueAdmin(me) ? undefined : ne(messages.roomId, "diretoria")).orderBy(desc(messages.createdAt)).limit(100),
       db.select().from(meetings).where(gt(meetings.startsAt, new Date(Date.now() - 86400000))).orderBy(asc(meetings.startsAt)).limit(100),
@@ -26,7 +33,7 @@ export async function GET() {
       me: publicMember(me),
       members: members.map(publicMember),
       team: team.map(publicMember),
-      rooms: ROOM_DATA.map(r => roomList.find(item => item.id === r.id) || r),
+      rooms: ROOM_DATA.filter(room => isPrivateRoomAuthorized || room.id !== "diretoria").map(r => roomList.find(item => item.id === r.id) || r),
       messages: chat.reverse().map(message => ({ ...message, sender: publicMember(message.sender) })),
       meetings: visibleEvents,
     }, { headers: { "Cache-Control": "no-store" } });
