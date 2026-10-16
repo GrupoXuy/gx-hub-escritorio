@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { users, rooms, messages, meetings } from "@/db/schema";
-import { and, desc, eq, gt, or, asc } from "drizzle-orm";
+import { and, desc, eq, gt, ne, or, asc } from "drizzle-orm";
 import { getMember, seedWorkspace, fail, publicMember } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
 import { serializeLook } from "@/lib/avatar";
@@ -18,7 +18,7 @@ export async function GET() {
       db.select().from(users).where(and(eq(users.isDemo, false), or(gt(users.lastSeen, new Date(Date.now() - 45000)), eq(users.id, me.id)))).orderBy(asc(users.name)),
       db.select().from(users).where(eq(users.isDemo, false)).orderBy(asc(users.name)),
       db.select().from(rooms),
-      db.select({ id: messages.id, senderId: messages.senderId, roomId: messages.roomId, content: messages.content, createdAt: messages.createdAt, sender: users }).from(messages).innerJoin(users, eq(messages.senderId, users.id)).orderBy(desc(messages.createdAt)).limit(100),
+      db.select({ id: messages.id, senderId: messages.senderId, roomId: messages.roomId, content: messages.content, createdAt: messages.createdAt, sender: users }).from(messages).innerJoin(users, eq(messages.senderId, users.id)).where(me.isAdmin ? undefined : ne(messages.roomId, "diretoria")).orderBy(desc(messages.createdAt)).limit(100),
       db.select().from(meetings).where(gt(meetings.startsAt, new Date(Date.now() - 86400000))).orderBy(asc(meetings.startsAt)).limit(100),
     ]);
     const visibleEvents = me.isAdmin ? events : events.filter(event => event.roomId !== "diretoria");
