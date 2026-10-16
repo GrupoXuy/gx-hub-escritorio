@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { meetings, clientInvites, leads, users } from "@/db/schema";
 import { and, eq, gt, lt, sql, inArray } from "drizzle-orm";
-import { getMember, fail } from "@/lib/server";
+import { getMember, fail, isHenriqueAdmin } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
 export async function POST(request: Request) {
   try {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     if (!Number.isFinite(startsAt.getTime()) || startsAt.getTime() < Date.now() - 60000) return Response.json({ error: "Escolha uma data e um horário futuros." }, { status: 400 });
     if (![15, 30, 45, 60, 90, 120].includes(duration)) return Response.json({ error: "Selecione uma duração válida." }, { status: 400 });
     if (!ROOM_DATA.some(r => r.id === body.roomId)) return Response.json({ error: "Escolha uma sala disponível." }, { status: 400 });
-    if (body.roomId === "diretoria" && !me.isAdmin) return Response.json({ error: "A Sala da diretoria é exclusiva para administradores." }, { status: 403 });
+    if (body.roomId === "diretoria" && !isHenriqueAdmin(me)) return Response.json({ error: "A Sala da diretoria é exclusiva para Henrique Senna." }, { status: 403 });
     const end = new Date(startsAt.getTime() + duration * 60000);
     const result = await db.transaction(async tx => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${body.roomId}))`);
