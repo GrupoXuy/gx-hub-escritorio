@@ -165,6 +165,58 @@ try {
   assert.equal(userBState.me.name, testName);
   console.log('PASS: user B individual email/password authentication & wrong password rejection');
 
+  // 6a. Private-room authorization must hold at API level, not only in the UI.
+  assert.ok(userBState.messages.every((message) => message.roomId !== 'diretoria'), 'Non-admin workspace payload hides boardroom chat');
+  assert.ok(userBState.meetings.every((meeting) => meeting.roomId !== 'diretoria'), 'Non-admin workspace payload hides boardroom meetings');
+  const privateChatAttempt = await pageB.request.post(`${base}/api/messages`, {
+    data: { roomId: 'diretoria', content: `Tentativa privada ${Date.now()}` },
+  });
+  assert.equal(privateChatAttempt.status(), 403, 'Non-admin cannot send boardroom chat messages');
+  const privateMeetingAttempt = await pageB.request.post(`${base}/api/meetings`, {
+    data: { title: 'Reunião privada bloqueada', roomId: 'diretoria', startsAt: new Date(Date.now() + 300 * 86400000).toISOString(), duration: 30 },
+  });
+  assert.equal(privateMeetingAttempt.status(), 403, 'Non-admin cannot schedule boardroom meetings');
+
+  // A founder-created boardroom meeting still cannot issue a client invite.
+  const privateMeetingResponse = await adminApi.post(`${base}/api/meetings`, {
+    data: { title: `Validação diretoria ${Date.now()}`, roomId: 'diretoria', startsAt: new Date(Date.now() + (320 + Math.floor(Math.random() * 90)) * 86400000).toISOString(), duration: 30 },
+  });
+  assert.equal(privateMeetingResponse.status(), 201);
+  const privateMeeting = await privateMeetingResponse.json();
+  try {
+    const privateInviteAttempt = await adminApi.post(`${base}/api/client-invites`, { data: { meetingId: privateMeeting.id } });
+    assert.equal(privateInviteAttempt.status(), 403, 'Client invites are not issued for the boardroom');
+  } finally {
+    await adminApi.delete(`${base}/api/meetings?id=${encodeURIComponent(privateMeeting.id)}`);
+  }
+
+  // A regular client invite exposes only the guest floor and never the boardroom.
+  const guestMeetingResponse = await adminApi.post(`${base}/api/meetings`, {
+    data: { title: `Validação convidado ${Date.now()}`, roomId: 'recepcao', startsAt: new Date(Date.now() + (420 + Math.floor(Math.random() * 90)) * 86400000).toISOString(), duration: 30 },
+  });
+  assert.equal(guestMeetingResponse.status(), 201);
+  const guestMeeting = await guestMeetingResponse.json();
+  try {
+    const inviteResponse = await adminApi.post(`${base}/api/client-invites`, { data: { meetingId: guestMeeting.id } });
+    assert.equal(inviteResponse.status(), 201);
+    const invite = await inviteResponse.json();
+    const guestContext = await newContext();
+    const guestClaimResponse = await guestContext.request.post(`${base}/api/client-invites/claim`, {
+      data: { token: invite.token, name: `Cliente Teste ${Date.now()}`, gender: 'male', whatsapp: '09912345678', email: `guest.test.${Date.now()}@example.com` },
+    });
+    assert.equal(guestClaimResponse.status(), 201);
+    const guestStateResponse = await guestContext.request.get(`${base}/api/guest-office`);
+    assert.equal(guestStateResponse.status(), 200);
+    const guestState = await guestStateResponse.json();
+    assert.ok(guestState.rooms.every((room) => room.id !== 'diretoria'), 'Guest receives no boardroom metadata');
+    assert.ok(guestState.members.every((member) => member.roomId !== 'diretoria'), 'Guest receives no boardroom presence');
+    const guestBoardroomAttempt = await guestContext.request.patch(`${base}/api/guest-office`, { data: { roomId: 'diretoria' } });
+    assert.equal(guestBoardroomAttempt.status(), 400, 'Guest cannot move into the boardroom');
+  } finally {
+    await adminApi.delete(`${base}/api/meetings?id=${encodeURIComponent(guestMeeting.id)}`);
+  }
+  console.log('PASS: boardroom API guards, invite isolation, and guest floor isolation');
+
   // 7. Test Chat between Henrique and User B
   const testMsg = `Mensagem de sincronização ${Date.now()}`;
   await page.getByRole('textbox', { name: 'Escreva uma mensagem', exact: true }).fill(testMsg);
