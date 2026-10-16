@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         .innerJoin(rooms, eq(rooms.id, meetings.roomId))
         .where(and(eq(clientInvites.id, token), isNull(clientInvites.usedAt), gt(clientInvites.expiresAt, new Date())))
         .limit(1);
-      if (!row) return { error: "Este convite já foi utilizado, expirou ou não existe." } as const;
+      if (!row || row.meeting.roomId === "diretoria") return { error: "Este convite já foi utilizado, expirou ou não existe." } as const;
       const [lead] = await tx.insert(leads).values({
         ownerId: row.invite.createdBy,
         source: "client-invite",
