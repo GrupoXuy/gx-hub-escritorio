@@ -125,5 +125,5 @@ do mesmo jeito que o filtro `feMorphology` do SVG, incluindo o rim light dourado
 do avatar próprio — o que aparece na folha de contatos é o que aparece no mapa.
 
 
-- **Base individual de Leads:** a aba **Leads** fica separada do **Ecossistema Grupo X**. Cada usuário autenticado consulta apenas os leads cujo `owner_id` é seu próprio usuário. Leads antigos de convites são atribuídos ao criador do convite; leads do **GX Radar** entram como `source = gx-radar` e aceitam empresa, WhatsApp, Instagram e site. A interface oferece direcionamento por WhatsApp, Instagram e site e exportação CSV da própria base.
-- **Entrada do GX Radar:** o endpoint `POST /api/leads/radar` recebe leads externos usando `GX_RADAR_API_KEY`. O payload deve informar um responsável por `ownerId`/`ownerEmail` (ou aliases `userId`, `assignedTo`, `assignedToEmail`) e pode enviar `name`, `companyName`, `whatsapp`, `email`, `instagram` e `website`. A chave deve existir somente na integração servidor-a-servidor do Radar; nunca no frontend.
+- **Base individual de Leads:** a aba **Leads** fica separada do **Ecossistema Grupo X**. Cada usuário autenticado consulta apenas os leads cujo `owner_id` é seu próprio usuário. Os contatos originados por convites são atribuídos ao criador do convite; a interface oferece direcionamento por WhatsApp, Instagram e site e exportação CSV da própria base.
+
