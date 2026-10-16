@@ -168,6 +168,9 @@ try {
   // 6a. Private-room authorization must hold at API level, not only in the UI.
   assert.ok(userBState.messages.every((message) => message.roomId !== 'diretoria'), 'Non-admin workspace payload hides boardroom chat');
   assert.ok(userBState.meetings.every((meeting) => meeting.roomId !== 'diretoria'), 'Non-admin workspace payload hides boardroom meetings');
+  assert.ok(userBState.rooms.every((room) => room.id !== 'diretoria'), 'Non-admin workspace payload hides boardroom metadata');
+  assert.ok(userBState.members.every((member) => member.roomId !== 'diretoria'), 'Non-admin workspace payload hides boardroom presence');
+  assert.ok(userBState.team.every((member) => member.roomId !== 'diretoria'), 'Non-admin team directory hides boardroom presence');
   const privateChatAttempt = await pageB.request.post(`${base}/api/messages`, {
     data: { roomId: 'diretoria', content: `Tentativa privada ${Date.now()}` },
   });
