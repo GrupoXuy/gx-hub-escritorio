@@ -1,8 +1,9 @@
--- GX Hub Escritório — leads por usuário e integração com GX Radar
--- 0003_leads_radar.sql
+-- GX Hub Escritório — base de Leads por usuário
+-- 0003_leads_radar.sql (histórico do schema; mantido para compatibilidade)
 --
--- Leads originados pelo Radar pertencem explicitamente a um usuário.
+-- Os contatos pertencem explicitamente a um usuário.
 -- Leads antigos de convites são vinculados ao criador do convite.
+-- A integração GX Radar é exclusiva do GX Hub Office System e não faz parte do Office Meet.
 
 ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS owner_id text;
 ALTER TABLE gx_leads ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'client-invite';
