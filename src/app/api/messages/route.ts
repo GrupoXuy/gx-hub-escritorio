@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     const roomId = body.roomId || "geral";
     if (!content || content.length > 2000) return Response.json({ error: "Escreva uma mensagem de até 2.000 caracteres." }, { status: 400 });
     if (roomId !== "geral" && !ROOM_DATA.some(r => r.id === roomId)) return Response.json({ error: "Conversa não encontrada." }, { status: 400 });
+    if (roomId === "diretoria" && !isHenriqueAdmin(me)) return Response.json({ error: "A Sala da diretoria é exclusiva para Henrique Senna." }, { status: 403 });
     const [message] = await db.insert(messages).values({ senderId: me.id, content, roomId }).returning();
     // Nunca devolva credenciais/dados privados do usuário junto da mensagem.
     return Response.json({ ...message, sender: publicMember(me) }, { status: 201 });
