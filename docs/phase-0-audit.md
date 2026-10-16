@@ -12,7 +12,7 @@ Produção: https://gxhubofficemeet.vercel.app
 - O histórico contém seis deployments ERROR antes do deployment READY mais recente. A causa dos erros foi identificada nos logs: export `Instagram` ausente em `lucide-react`. A correção posterior usa `InstagramGlyph`.
 - A suíte de smoke test existe em `scripts/verify-workspace.mjs` e exige credenciais de teste por variáveis de ambiente. Não foi executada contra produção nesta auditoria, pois as credenciais de teste não foram fornecidas e não se deve criar/alterar usuários reais sem uma conta de teste controlada.
 - A consulta do health endpoint pela ferramenta web não foi possível. Os logs de runtime do plano Hobby não retêm a janela solicitada; a consulta recente de erros mostrou um aviso do driver PostgreSQL sobre a semântica futura de SSL, não uma falha de aplicação confirmada.
-- A integração GX Radar ainda não está pronta para produção: a variável `GX_RADAR_API_KEY` não consta na lista de variáveis da Vercel. O endpoint rejeita chamadas sem ela.
+- Decisão arquitetural (2026-10-16): GX Radar pertence exclusivamente ao GX Hub Office System. A integração com o Office Meet foi descontinuada; o endpoint de ingestão de Radar não será utilizado nem configurado neste projeto.
 - A Vercel marca algumas variáveis de banco e credenciais administrativas como `readable-secret`. Isso é uma sinalização de configuração da plataforma e exige mudar o tipo para `sensitive` quando suportado; não comprova, por si só, que houve exposição pública.
 - O endpoint de workspace consulta mensagens de todos os ambientes, ao contrário da filtragem já aplicada às reuniões da diretoria. Isso pode expor mensagens da diretoria aos membros comuns e deve ser corrigido na Fase 1.
 - O schema é inicializado pelo `seedWorkspace` em runtime com DDL e alterações idempotentes. Isso reduz a necessidade de migrações manuais, mas exige cuidado para não executar alterações destrutivas nem introduzir divergência com Drizzle.
@@ -27,7 +27,7 @@ Produção: https://gxhubofficemeet.vercel.app
 ## Plano de execução aprovado
 
 1. Fase 1: segurança e integridade — corrigir visibilidade de mensagens privadas, revisar tipo dos segredos e adicionar testes de autorização.
-2. Fase 2: GX Radar e Leads — cadastrar a chave servidor-a-servidor e testar atribuição/idempotência com o emissor real.
+2. Fase 2: Base de Leads do Office Meet — validar atribuição e idempotência de contatos originados por convites, sem integração com GX Radar.
 3. Fase 3: Realtime e presença — medir antes de substituir o polling.
 4. Fase 4: chamadas e agenda — validar WebRTC e concorrência.
 5. Fase 5: UX e produtividade — melhorias responsivas e comerciais.
