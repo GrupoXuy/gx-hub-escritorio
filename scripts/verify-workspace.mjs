@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const base = process.env.GX_TEST_BASE_URL || process.env.TEST_BASE_URL || 'http://127.0.0.1:3000';
