@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { users, rooms, messages, meetings } from "@/db/schema";
 import { and, desc, eq, gt, ne, or, asc } from "drizzle-orm";
-import { getMember, seedWorkspace, fail, publicMember } from "@/lib/server";
+import { getMember, seedWorkspace, fail, publicMember, isHenriqueAdmin } from "@/lib/server";
 import { ROOM_DATA } from "@/lib/workspace";
 import { serializeLook } from "@/lib/avatar";
 export const dynamic = "force-dynamic";
@@ -18,10 +18,10 @@ export async function GET() {
       db.select().from(users).where(and(eq(users.isDemo, false), or(gt(users.lastSeen, new Date(Date.now() - 45000)), eq(users.id, me.id)))).orderBy(asc(users.name)),
       db.select().from(users).where(eq(users.isDemo, false)).orderBy(asc(users.name)),
       db.select().from(rooms),
-      db.select({ id: messages.id, senderId: messages.senderId, roomId: messages.roomId, content: messages.content, createdAt: messages.createdAt, sender: users }).from(messages).innerJoin(users, eq(messages.senderId, users.id)).where(me.isAdmin ? undefined : ne(messages.roomId, "diretoria")).orderBy(desc(messages.createdAt)).limit(100),
+      db.select({ id: messages.id, senderId: messages.senderId, roomId: messages.roomId, content: messages.content, createdAt: messages.createdAt, sender: users }).from(messages).innerJoin(users, eq(messages.senderId, users.id)).where(isHenriqueAdmin(me) ? undefined : ne(messages.roomId, "diretoria")).orderBy(desc(messages.createdAt)).limit(100),
       db.select().from(meetings).where(gt(meetings.startsAt, new Date(Date.now() - 86400000))).orderBy(asc(meetings.startsAt)).limit(100),
     ]);
-    const visibleEvents = me.isAdmin ? events : events.filter(event => event.roomId !== "diretoria");
+    const visibleEvents = isHenriqueAdmin(me) ? events : events.filter(event => event.roomId !== "diretoria");
     return Response.json({
       me: publicMember(me),
       members: members.map(publicMember),
@@ -63,7 +63,7 @@ export async function PATCH(request: Request) {
     }
     if (body.roomId !== undefined) {
       if (!ROOM_DATA.some(room => room.id === body.roomId)) return Response.json({ error: "Ambiente não encontrado." }, { status: 400 });
-      if (body.roomId === "diretoria" && !me.isAdmin) return Response.json({ error: "A Sala da diretoria é exclusiva para administradores." }, { status: 403 });
+      if (body.roomId === "diretoria" && !isHenriqueAdmin(me)) return Response.json({ error: "A Sala da diretoria é exclusiva para Henrique Senna." }, { status: 403 });
       patch.roomId = body.roomId;
     }
     if (typeof body.x === "number" && Number.isFinite(body.x)) patch.x = Math.max(10, Math.min(90, body.x));
