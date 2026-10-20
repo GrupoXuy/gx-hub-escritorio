@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { createElement, useEffect, useRef, useState, type CSSProperties } from "react";
 import { parseLook, skinPalette, GOLD, shade, tint } from "@/lib/avatar";
 
 export type Avatar3DMember = {
@@ -95,6 +95,100 @@ export function Avatar3D({ member, size = 48, own = false, showRing = false, isM
         </span>
         {(member.handRaised || action === "wave") && <i className="gx3d-wave-hand"/>}
       </span>
+      {process.env.NEXT_PUBLIC_GX_AVATAR_GLB_ENABLED === "true" && action === "idle" && !member.handRaised && !back && (
+        <GlbAvatarPreview />
+      )}
+    </span>
+  );
+}
+
+const MODEL_VIEWER_SCRIPT = "https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js";
+const DEFAULT_GLB_MODEL_URL = "https://d2ol7oe51mr4n9.cloudfront.net/user_3Jf2YO0hRUCBLBIs4WCkhFENfrz/98b1d91c-ad97-4f92-b0af-d83e8851896a.glb";
+let modelViewerScriptPromise: Promise<void> | undefined;
+
+function loadModelViewer(): Promise<void> {
+  if (typeof window === "undefined") return Promise.reject(new Error("Model viewer requires a browser"));
+  if (window.customElements?.get("model-viewer")) return Promise.resolve();
+  if (!modelViewerScriptPromise) {
+    modelViewerScriptPromise = new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = MODEL_VIEWER_SCRIPT;
+      script.dataset.gxModelViewer = "true";
+      script.onload = () => resolve();
+      script.onerror = () => {
+        modelViewerScriptPromise = undefined;
+        reject(new Error("Could not load the 3D model renderer"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return modelViewerScriptPromise;
+}
+
+/**
+ * Experimental GLB path. The procedural avatar remains visible until the real
+ * model emits `load`; every failure leaves the existing renderer untouched.
+ * Enable only for internal validation with NEXT_PUBLIC_GX_AVATAR_GLB_ENABLED=true.
+ */
+function GlbAvatarPreview() {
+  const [ready, setReady] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const wrapperRef = useRef<HTMLSpanElement | null>(null);
+  const viewerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    let active = true;
+    loadModelViewer().then(
+      () => { if (active) setReady(true); },
+      () => { if (active) setReady(false); },
+    );
+    return () => {
+      active = false;
+      wrapperRef.current?.parentElement?.classList.remove("gx-avatar3d-glb-ready");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !viewerRef.current) return;
+    const viewer = viewerRef.current as HTMLElement & { loaded?: boolean };
+    const root = wrapperRef.current?.parentElement;
+    const onLoad = () => root?.classList.add("gx-avatar3d-glb-ready");
+    const onError = () => root?.classList.remove("gx-avatar3d-glb-ready");
+    viewer.addEventListener("load", onLoad);
+    viewer.addEventListener("error", onError);
+    if (viewer.loaded) onLoad();
+    return () => {
+      viewer.removeEventListener("load", onLoad);
+      viewer.removeEventListener("error", onError);
+      root?.classList.remove("gx-avatar3d-glb-ready");
+    };
+  }, [ready]);
+
+  if (!ready) return null;
+  const modelUrl = process.env.NEXT_PUBLIC_GX_AVATAR_3D_MODEL_URL || DEFAULT_GLB_MODEL_URL;
+  return (
+    <span ref={wrapperRef} className="gx3d-glb-preview" aria-hidden="true">
+      {createElement("model-viewer", {
+        ref: (node: HTMLElement | null) => { viewerRef.current = node; },
+        src: modelUrl,
+        alt: "Avatar 3D do GX Hub",
+        "animation-name": "Idle_Standing",
+        autoplay: !reducedMotion,
+        "camera-orbit": "0deg 75deg 110%",
+        "field-of-view": "30deg",
+        "shadow-intensity": "0.8",
+        exposure: "1",
+        "environment-image": "neutral",
+        "interaction-prompt": "none",
+        "disable-zoom": true,
+        "disable-pan": true,
+        "disable-tap": true,
+        loading: "lazy",
+        reveal: "auto",
+        style: { width: "100%", height: "100%", background: "transparent", pointerEvents: "none" },
+      })}
     </span>
   );
 }
