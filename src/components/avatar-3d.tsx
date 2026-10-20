@@ -133,11 +133,9 @@ function loadModelViewer(): Promise<void> {
  */
 function GlbAvatarPreview() {
   const [ready, setReady] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
-    setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     let active = true;
     const wrapper = wrapperRef.current;
     loadModelViewer().then(
@@ -156,6 +154,8 @@ function GlbAvatarPreview() {
     const viewer = wrapper?.querySelector("model-viewer") as (HTMLElement & { loaded?: boolean }) | null;
     if (!wrapper || !viewer) return;
     const root = wrapper.parentElement;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) viewer.removeAttribute("autoplay");
+    else viewer.setAttribute("autoplay", "");
     const onLoad = () => root?.classList.add("gx-avatar3d-glb-ready");
     const onError = () => root?.classList.remove("gx-avatar3d-glb-ready");
     viewer.addEventListener("load", onLoad);
@@ -176,7 +176,6 @@ function GlbAvatarPreview() {
         src: modelUrl,
         alt: "Avatar 3D do GX Hub",
         "animation-name": "Idle_Standing",
-        autoplay: !reducedMotion,
         "camera-orbit": "0deg 75deg 110%",
         "field-of-view": "30deg",
         "shadow-intensity": "0.8",
