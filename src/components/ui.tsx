@@ -1,5 +1,5 @@
 "use client";
-import { useId, useEffect, useRef, type ReactNode, type ButtonHTMLAttributes } from "react";
+import { useId, useEffect, useRef, useState, type ReactNode, type ButtonHTMLAttributes } from "react";
 import { Armchair, Monitor, Presentation, Coffee, ShieldCheck, X } from "lucide-react";
 import { initials, type Direction, type AvatarAction } from "@/lib/workspace";
 import { Avatar3D } from "@/components/avatar-3d";
@@ -44,8 +44,17 @@ export function Avatar({
 }) {
   const photo = member.avatar && /^https?:\/\//.test(member.avatar) ? member.avatar : "";
   const avatarMember = { ...member, action: member.action || "idle", direction: member.direction || "dr" };
-  const lastSeenMs = member.lastSeen ? Date.now() - new Date(member.lastSeen).getTime() : Number.POSITIVE_INFINITY;
-  const presence = lastSeenMs > 60000 ? "offline" : (member.status || "available");
+  const [presence, setPresence] = useState(member.lastSeen ? (member.status || "available") : "offline");
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const refreshPresence = () => {
+      const age = member.lastSeen ? Date.now() - new Date(member.lastSeen).getTime() : Number.POSITIVE_INFINITY;
+      setPresence(age > 60000 ? "offline" : (member.status || "available"));
+      if (age <= 60000) timeout = setTimeout(refreshPresence, Math.max(250, 60001 - age));
+    };
+    refreshPresence();
+    return () => { if (timeout) clearTimeout(timeout); };
+  }, [member.lastSeen, member.status]);
   return (
     <span
       className={`avatar ${photo ? "has-photo" : ""} ${className}`}
