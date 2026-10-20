@@ -135,25 +135,27 @@ function GlbAvatarPreview() {
   const [ready, setReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
-  const viewerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     let active = true;
+    const wrapper = wrapperRef.current;
     loadModelViewer().then(
       () => { if (active) setReady(true); },
       () => { if (active) setReady(false); },
     );
     return () => {
       active = false;
-      wrapperRef.current?.parentElement?.classList.remove("gx-avatar3d-glb-ready");
+      wrapper?.parentElement?.classList.remove("gx-avatar3d-glb-ready");
     };
   }, []);
 
   useEffect(() => {
-    if (!ready || !viewerRef.current) return;
-    const viewer = viewerRef.current as HTMLElement & { loaded?: boolean };
-    const root = wrapperRef.current?.parentElement;
+    if (!ready) return;
+    const wrapper = wrapperRef.current;
+    const viewer = wrapper?.querySelector("model-viewer") as (HTMLElement & { loaded?: boolean }) | null;
+    if (!wrapper || !viewer) return;
+    const root = wrapper.parentElement;
     const onLoad = () => root?.classList.add("gx-avatar3d-glb-ready");
     const onError = () => root?.classList.remove("gx-avatar3d-glb-ready");
     viewer.addEventListener("load", onLoad);
@@ -171,7 +173,6 @@ function GlbAvatarPreview() {
   return (
     <span ref={wrapperRef} className="gx3d-glb-preview" aria-hidden="true">
       {createElement("model-viewer", {
-        ref: (node: HTMLElement | null) => { viewerRef.current = node; },
         src: modelUrl,
         alt: "Avatar 3D do GX Hub",
         "animation-name": "Idle_Standing",
